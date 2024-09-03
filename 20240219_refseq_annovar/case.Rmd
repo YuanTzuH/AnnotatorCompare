@@ -1,0 +1,68 @@
+# Case 1
+
+```{r}
+tsv_all_variant %>%
+  slice_sample(n = 100) %>%
+  select(-key) %>%
+  arrange(match(chr, c(1:22, "X", "Y", "MT")), start, ref, alt, Func_refGene) %>%
+  write_tsv(file = "example1.tsv")
+
+```
+
+```{r}
+tsv_exon_variant %>%
+  filter(key == "TAG=159580|169639")
+```
+
+---
+
+# Case 2
+
+```{r}
+tsv_all_variant %>%
+  filter(str_detect(Gene_refGene, '[^\\)\\d],'))
+
+```
+
+---
+
+# Case 3
+
+```{r}
+tsv_exon_variant %>%
+  filter(ExonicFunc_refGene == "unknown")
+```
+
+```{r}
+tsv_exon_variant_sepTX %>%
+  filter(ExonicFunc_refGene == "unknown")
+```
+
+```{r}
+Joint_all_variant_exonic %>%
+  filter(is.na(ExonicFunc_refGene))
+```
+
+
+```{r}
+Joint_all_variant_exonic_unknow %>%
+  filter(is.na(HGVSc))
+```
+
+
+```{r}
+tsv_all_variant %>%
+  filter(key == "TAG=495249|486749")
+```
+
+```{r}
+tsv_exon_variant %>%
+  filter(key == "TAG=495249|486749")
+```
+
+```{r}
+Joint_all_variant_exonic_unknow %>%
+  filter(key == "TAG=495249|486749")
+```
+
+

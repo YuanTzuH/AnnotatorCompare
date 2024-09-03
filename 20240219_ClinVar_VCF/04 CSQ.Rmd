@@ -1,0 +1,103 @@
+```{r}
+library(tidyverse)
+```
+
+---
+
+GRCh38
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh38_BLB_Tx1.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh38_PLP_Tx1.RData")
+```
+
+---
+
+```{r}
+bind_rows(
+  df_clinvar_GRCh38_BLB_Tx1,
+  df_clinvar_GRCh38_PLP_Tx1
+) %>%
+  select(key, Type, NM, Consequence) %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(Consequence)
+```
+
+```{r}
+bind_rows(
+  df_clinvar_GRCh38_BLB_Tx1,
+  df_clinvar_GRCh38_PLP_Tx1
+) %>%
+  filter(Consequence == "no_sequence_alteration") 
+```
+
+```{r}
+CSQ_ClinVar_GRCh38_Tx1 <- bind_rows(
+  df_clinvar_GRCh38_BLB_Tx1,
+  df_clinvar_GRCh38_PLP_Tx1
+) %>%
+  mutate(Consequence = if_else(
+    Consequence == "no_sequence_alteration",
+    "Others",
+    Consequence
+  )) %>%
+  select(key, Type, NM, Consequence)
+```
+
+```{r}
+save(CSQ_ClinVar_GRCh38_Tx1, file = "CSQ_concordance/CSQ_ClinVar_GRCh38_Tx1.RData")
+```
+
+
+---
+
+GRCh37
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh37_BLB_Tx1.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh37_PLP_Tx1.RData")
+```
+
+---
+
+```{r}
+bind_rows(
+  df_clinvar_GRCh37_BLB_Tx1,
+  df_clinvar_GRCh37_PLP_Tx1
+) %>%
+  select(key, Type, NM, Consequence) %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(Consequence)
+```
+
+
+```{r}
+bind_rows(
+  df_clinvar_GRCh37_BLB_Tx1,
+  df_clinvar_GRCh37_PLP_Tx1
+) %>%
+  filter(Consequence == "no_sequence_alteration") 
+```
+
+```{r}
+CSQ_ClinVar_GRCh37_Tx1 <- bind_rows(
+  df_clinvar_GRCh37_BLB_Tx1,
+  df_clinvar_GRCh37_PLP_Tx1
+) %>%
+  mutate(Consequence = if_else(
+    Consequence == "no_sequence_alteration",
+    "Others",
+    Consequence
+  )) %>%
+  select(key, Type, NM, Consequence)
+```
+
+```{r}
+save(CSQ_ClinVar_GRCh37_Tx1, file = "CSQ_concordance/CSQ_ClinVar_GRCh37_Tx1.RData")
+```
+
+
+
+

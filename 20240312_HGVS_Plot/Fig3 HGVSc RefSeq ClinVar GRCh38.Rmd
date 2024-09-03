@@ -1,0 +1,185 @@
+```{r}
+library(tidyverse)
+library(ggVennDiagram)
+```
+
+---
+
+要接在`Fig3 HGVSc RefSeq Venn GRCh38.Rmd`之後
+
+```{r}
+rm(
+  df_ClinVar_GRCh38_PLP_annovar_refseq,
+  df_ClinVar_GRCh38_BLB_annovar_refseq,
+  df_ClinVar_GRCh38_PLP_snpeff_refseq,
+  df_ClinVar_GRCh38_BLB_snpeff_refseq,
+  df_ClinVar_GRCh38_PLP_vep_refseq,
+  df_ClinVar_GRCh38_BLB_vep_refseq
+)
+```
+
+```{r}
+rm(
+  ANNOVAR,
+  SnpEff,
+  VEP,
+  All,
+  Venn_TxVariants_Full,
+  data
+)
+```
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh38_PLP_Tx1.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh38_BLB_Tx1.RData")
+```
+
+```{r}
+ClinVar_NM <- union(df_clinvar_GRCh38_BLB_Tx1$NM, df_clinvar_GRCh38_PLP_Tx1$NM) %>% sort()
+```
+
+---
+
+```{r}
+
+ANNOVAR_clinvar <- ANNOVAR_allDF %>%
+  # 449,112
+  filter(NM %in% ClinVar_NM)
+  # 154,235
+
+SnpEff_clinvar <- SnpEff_allDF %>%
+  # 188,812
+  filter(NM %in% ClinVar_NM)
+  # 172,301
+
+VEP_clinvar <- VEP_allDF %>%
+  # 1,283,077
+  filter(NM %in% ClinVar_NM)
+  # 189,580
+
+```
+
+
+```{r}
+ANNOVAR <- ANNOVAR_clinvar %>% 
+  mutate(ANNOVAR = str_c(key, ":", NM, ":", HGVSc)) %>%
+  select(ANNOVAR) %>% unlist(use.names = F) %>% sort()
+# 154235
+
+SnpEff <- SnpEff_clinvar %>% 
+  mutate(SnpEff = str_c(key, ":", NM, ":", HGVSc)) %>%
+  select(SnpEff) %>% unlist(use.names = F) %>% sort()
+# 172301
+
+VEP <- VEP_clinvar %>%
+  mutate(VEP = str_c(key, ":", NM, ":", HGVSc)) %>%
+  select(VEP) %>% unlist(use.names = F) %>% sort()
+# 189580
+
+All <- union(union(ANNOVAR, SnpEff), VEP) %>% sort()
+# 211870
+
+```
+
+```{r}
+Venn_TxVariants_ClinVar <- Venn(list(
+  ANNOVAR = ANNOVAR,
+  SnpEff = SnpEff,
+  VEP = VEP
+))
+
+
+data <- process_data(Venn_TxVariants_ClinVar)
+```
+
+```{r fig.width=5, fig.height=5}
+ggplot() +
+  # 1. region count layer
+  geom_polygon(aes(X, Y, fill = id, group = id), 
+          data = venn_regionedge(data),
+          show.legend = FALSE) +
+  # 2. set edge layer
+  geom_path(aes(X, Y, group = id),
+            color="grey",
+            data = venn_setedge(data),
+            linewidth = 1,
+            show.legend = FALSE) +
+  # 3. set label layer
+  geom_text(aes(X, Y, label = name), 
+            fontface = "bold",
+            data = venn_setlabel(data)) +
+  # 4. region label layer
+  geom_label(aes(X, Y, label = count), 
+             data = venn_regionlabel(data),
+             size = 5,
+             alpha = 0.5) +
+  coord_equal() +
+  theme_void()
+```
+
+```{r}
+12998+1183+8109+16077+123977+39032+10494
+
+12998/211870
+1183/211870
+8109/211870
+16077/211870
+123977/211870
+39032/211870
+10494/211870
+
+```
+
+12998/211870=0.06134894
+1183/211870=0.005583613
+8109/211870=0.03827347
+16077/211870=0.07588144
+123977/211870=0.585156
+39032/211870=0.1842262
+10494/211870=0.04953037
+
+
+```{r fig.width=5, fig.height=5}
+Venn_TxVariants_ClinVar <- ggplot() +
+  # 1. region count layer
+  geom_polygon(aes(X, Y, fill = id, group = id), 
+          data = venn_regionedge(data),
+          show.legend = FALSE) +
+  # 2. set edge layer
+  geom_path(aes(X, Y, group = id),
+            color="grey",
+            data = venn_setedge(data),
+            linewidth = 1,
+            show.legend = FALSE) +
+  # 3. set label layer
+  geom_text(aes(X, Y, label = name), 
+            fontface = "bold",
+            data = venn_setlabel(data)) +
+  # 4. region label layer
+  geom_label(aes(X, Y, label = count), 
+             data = venn_regionlabel(data),
+             size = 5,
+             alpha = 0.5) +
+  coord_equal() +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
+    panel.grid.major = element_blank() #remove major gridlines
+  ) +
+  theme_void()
+```
+
+```{r}
+ggsave("HGVSc/Venn_HGVSc_ClinVarTx.png", Venn_TxVariants_ClinVar, bg='transparent', width = 5, height = 5)
+```
+
+```{r}
+data$regionData %>% 
+  mutate(item = map_chr(item, paste, collapse = ",")) %>%
+  write_tsv(file = "HGVSc/Venn_HGVSc_ClinVarTx.tsv")
+```
+
+```{bash}
+head HGVSc/Venn_HGVSc_ClinVarTx.tsv
+```
+

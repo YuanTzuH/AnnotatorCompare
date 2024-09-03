@@ -1,0 +1,156 @@
+```{r}
+library(tidyverse)
+```
+
+```{bash}
+head -n 40 GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.snpeff.vcf
+```
+Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length | CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO
+Gene_Name | Gene_ID | Number_of_transcripts_in_gene | Percent_of_transcripts_affected
+Gene_Name | Gene_ID | Number_of_transcripts_in_gene | Percent_of_transcripts_affected
+
+```{bash}
+head GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.query.tsv
+```
+
+```{r}
+tsv_ann <- read_tsv(
+  "GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.query.tsv",
+  col_names = c("chr", "start", "ref", "alt", "key", "ANN", "LOF", "NMD")
+)
+
+# 44,351
+```
+
+```{r}
+tsv_ann_sep1 <- tsv_ann %>%
+  separate_rows(ANN, sep = ",")
+
+# 50,928
+```
+
+```{r}
+tsv_ann_sep2 <- tsv_ann_sep1 %>%
+  separate(
+    ANN,
+    c(
+      "Allele",
+      "Annotation",
+      "Annotation_Impact",
+      "Gene_Name",
+      "Gene_ID",
+      "Feature_Type",
+      "Feature_ID",
+      "Transcript_BioType",
+      "Rank",
+      "HGVSc",
+      "HGVSp",
+      "cDNA",
+      "CDS",
+      "AA",
+      "Distance",
+      "INFO"
+    ),
+    sep = "\\|", remove = T, convert = F
+    )
+
+# 50,928
+```
+
+```{r}
+tsv_ann_sep2[tsv_ann_sep2 == ""] = "."
+```
+
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_refseq <- tsv_ann_sep2 %>%
+  select(
+    key, chr, start, ref, alt,
+    Gene_Name, Gene_ID, Annotation, Annotation_Impact,
+    Feature_ID, Feature_Type, Transcript_BioType,
+    Rank, cDNA, CDS, AA, Distance,
+    HGVSc, HGVSp,
+    LOF, NMD
+  ) %>%
+  mutate(NM = str_extract(Feature_ID, '[^\\.]+'))
+```
+
+```{r}
+rm(tsv_ann, tsv_ann_sep1, tsv_ann_sep2)
+```
+
+---
+
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_refseq %>%
+  filter(!str_detect(Feature_ID, '^N\\w_[0-9]+\\.[0-9]+'))
+```
+
+---
+
+# 濾掉怪Feature_ID
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_refseq <- df_ClinVar_GRCh38_PLP_snpeff_refseq %>%
+  filter(str_detect(Feature_ID, '^N\\w_[0-9]+\\.[0-9]+'))
+```
+
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_refseq %>%
+  mutate(NM = str_extract(NM, 'N\\w')) %>%
+  select(NM) %>%
+  group_by(NM) %>%
+  count()
+```
+
+---
+
+```{r}
+save(df_ClinVar_GRCh38_PLP_snpeff_refseq, file = "GRCh38_PLP/df_ClinVar_GRCh38_PLP_snpeff_refseq.RData")
+```
+
+---
+
+
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_refseq %>%
+  select(Annotation) %>%
+  # separate_rows(Annotation, sep = "&") %>%
+  group_by(Annotation) %>%
+  count() %>%
+  arrange(-n)
+
+```
+
+
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_refseq %>%
+  filter(str_detect(Annotation, "&")) %>%
+  group_by(key) %>%
+  filter(n() > 1)
+```
+
+https://www.ncbi.nlm.nih.gov/clinvar/variation/1483650
+
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_refseq %>%
+  filter(str_detect(Annotation, "&")) %>%
+  filter(key %in% c(
+    "1483650|1380767",
+    "693997|681816"
+  )) %>%
+  select(chr:alt, Gene_ID, Feature_ID, Annotation)
+```
+
+
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_refseq %>%
+  filter(str_detect(Annotation, "&")) %>%
+  group_by(key) %>%
+  filter(n() > 1) %>%
+  ungroup() %>%
+  group_by(key, Gene_Name) %>%
+  filter(n() == 1) %>%
+  ungroup() %>%
+  select(chr:alt, Gene_ID, Feature_ID, Annotation)
+```
+
+https://www.ncbi.nlm.nih.gov/clinvar/variation/160229/

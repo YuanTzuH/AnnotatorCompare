@@ -1,0 +1,282 @@
+```{r}
+library(tidyverse)
+library(ggVennDiagram)
+```
+
+---
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh38_PLP/df_ClinVar_GRCh38_PLP_annovar_refseq.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh38_BLB/df_ClinVar_GRCh38_BLB_annovar_refseq.RData")
+
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240227_refseq_snpeff/GRCh38_PLP/df_ClinVar_GRCh38_PLP_snpeff_refseq.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240227_refseq_snpeff/GRCh38_BLB/df_ClinVar_GRCh38_BLB_snpeff_refseq.RData")
+
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240226_refseq_vep/GRCh38_PLP/df_ClinVar_GRCh38_PLP_vep_refseq.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240226_refseq_vep/GRCh38_BLB/df_ClinVar_GRCh38_BLB_vep_refseq.RData")
+
+```
+
+---
+
+# HGVSp Mod
+
+## ANNOVAR
+```{r}
+AAnameList <- c(
+  "T" = "Thr",
+  "G" = "Gly",
+  "A" = "Ala",
+  "P" = "Pro",
+  "V" = "Val",
+  "L" = "Leu",
+  "I" = "Ile",
+  "F" = "Phe",
+  "W" = "Trp",
+  "Y" = "Tyr",
+  "D" = "Asp",
+  "H" = "His",
+  "N" = "Asn",
+  "E" = "Glu",
+  "K" = "Lys",
+  "Q" = "Gln",
+  "M" = "Met",
+  "R" = "Arg",
+  "S" = "Ser",
+  "C" = "Cys",
+  "X" = "Ter",
+  "\\*" = "Ter"
+)
+```
+
+```{r}
+ANNOVAR_HGVSp_refseq_all <- bind_rows(
+  df_ClinVar_GRCh38_PLP_annovar_refseq %>% select(key, NM, HGVSp),
+  df_ClinVar_GRCh38_BLB_annovar_refseq %>% select(key, NM, HGVSp)
+) %>%
+  # 664,426
+  filter(HGVSp != ".") %>%
+  # 384,599
+  distinct() %>%
+  # 384,599
+  
+  mutate(HGVSp = str_replace(HGVSp, '[AFCUDNEQGHLIKOMPRSTVWYX]fs\\*\\d+', 'fs')) %>%
+  
+  mutate(p1 = str_extract(HGVSp, '([AFCUDNEQGHLIKOMPRSTVWYX])(\\d+)([AFCUDNEQGHLIKOMPRSTVWYX])$', group = 1)) %>%
+  mutate(p2 = str_extract(HGVSp, '([AFCUDNEQGHLIKOMPRSTVWYX])(\\d+)([AFCUDNEQGHLIKOMPRSTVWYX])$', group = 2)) %>%
+  mutate(p3 = str_extract(HGVSp, '([AFCUDNEQGHLIKOMPRSTVWYX])(\\d+)([AFCUDNEQGHLIKOMPRSTVWYX])$', group = 3)) %>%
+  mutate(
+    p3 = if_else(
+      p3 == p1,
+      "=",
+      p3
+    )
+  ) %>%
+  mutate(p1 = str_replace_all(p1, AAnameList)) %>%
+  mutate(p3 = str_replace_all(p3, AAnameList)) %>%
+  mutate(ANNOVAR = str_c("p.", p1, p2, p3)) %>%
+  mutate(
+    ANNOVAR = if_else(
+      is.na(ANNOVAR),
+      str_replace_all(HGVSp, AAnameList),
+      ANNOVAR
+    )
+  ) %>%
+  # mutate(ANNOVAR = str_replace(ANNOVAR, 'fsTer\\d+', 'fs')) %>%
+  select(key, NM, ANNOVAR)
+
+# 384,599
+```
+
+
+## SnpEff
+```{r}
+SnpEff_HGVSp_refseq_all <- bind_rows(
+  df_ClinVar_GRCh38_PLP_snpeff_refseq %>% select(key, NM, HGVSp),
+  df_ClinVar_GRCh38_BLB_snpeff_refseq %>% select(key, NM, HGVSp)
+) %>%
+  # 188,971
+  filter(HGVSp != ".") %>%
+  # 127,063
+  distinct() %>%
+  # 127,063
+  mutate(p1 = str_extract(HGVSp, '([ACGHILMPSTV]\\w{2})(\\d+)([ACGHILMPSTV]\\w{2})$', group = 1)) %>%
+  mutate(p2 = str_extract(HGVSp, '([ACGHILMPSTV]\\w{2})(\\d+)([ACGHILMPSTV]\\w{2})$', group = 2)) %>%
+  mutate(p3 = str_extract(HGVSp, '([ACGHILMPSTV]\\w{2})(\\d+)([ACGHILMPSTV]\\w{2})$', group = 3)) %>%
+  mutate(
+    p3 = if_else(
+      p3 == p1,
+      "=",
+      p3
+    )
+  ) %>%
+  mutate(
+    SnpEff = if_else(
+      is.na(p1),
+      str_replace(HGVSp, '\\*', "Ter"),
+      str_c("p.", p1, p2, p3)
+    )
+  ) %>%
+  select(key, NM, SnpEff)
+
+# 127,063
+```
+
+## VEP
+```{r}
+VEP_HGVSp_refseq_all <- bind_rows(
+  df_ClinVar_GRCh38_PLP_vep_refseq %>% select(key, NM, SYMBOL, HGVSp),
+  df_ClinVar_GRCh38_BLB_vep_refseq%>% select(key, NM, SYMBOL, HGVSp)
+) %>%
+  # 1,397,641
+  filter(HGVSp != ".") %>%
+  # 682,720
+  distinct() %>%
+  # 682,720
+  mutate(VEP = str_extract(HGVSp, 'p\\..*')) %>%
+  filter(!is.na(VEP)) %>%
+  # 682,720
+  mutate(VEP = str_replace(VEP, '[ACGHILMPSTV]\\w{2}fsTer[\\d?]+', 'fs')) %>%
+  select(key, NM, VEP)
+
+# 682,720
+```
+
+---
+
+# Venn All RefSeq Transcript HGVSp
+
+```{r}
+ANNOVAR <- ANNOVAR_HGVSp_refseq_all %>%
+  mutate(ANNOVAR = str_c(key, ":", NM, ":", ANNOVAR)) %>%
+  select(ANNOVAR) %>% unlist(use.names = F) %>% sort()
+# 384599
+
+SnpEff <- SnpEff_HGVSp_refseq_all %>%
+  mutate(SnpEff = str_c(key, ":", NM, ":", SnpEff)) %>%
+  select(SnpEff) %>% unlist(use.names = F) %>% sort()
+# 127063
+
+VEP <- VEP_HGVSp_refseq_all %>%
+  mutate(VEP = str_c(key, ":", NM, ":", VEP)) %>%
+  select(VEP) %>% unlist(use.names = F) %>% sort()
+# 682720
+
+All <- union(union(ANNOVAR, SnpEff), VEP) %>% sort()
+# 690048
+```
+
+```{r}
+All[is.na(All)]
+```
+
+
+```{r}
+Venn_TxVariants_Full <- Venn(list(
+  ANNOVAR = ANNOVAR,
+  SnpEff = SnpEff,
+  VEP = VEP
+))
+
+
+data <- process_data(Venn_TxVariants_Full)
+```
+
+```{r fig.width=5, fig.height=5}
+ggplot() +
+  # 1. region count layer
+  geom_polygon(aes(X, Y, fill = id, group = id), 
+          data = venn_regionedge(data),
+          show.legend = FALSE) +
+  # 2. set edge layer
+  geom_path(aes(X, Y, group = id),
+            color="grey",
+            data = venn_setedge(data),
+            linewidth = 1,
+            show.legend = FALSE) +
+  # 3. set label layer
+  geom_text(aes(X, Y, label = name), 
+            fontface = "bold",
+            data = venn_setlabel(data)) +
+  # 4. region label layer
+  geom_label(aes(X, Y, label = count), 
+             data = venn_regionlabel(data),
+             size = 5,
+             alpha = 0.5) +
+  coord_equal() +
+  theme_void()
+```
+
+```{r}
+5763+160+1405+254468+124208+1290+302754
+
+5763/690048
+160/690048
+1405/690048
+254468/690048
+124208/690048
+1290/690048
+302754/690048
+
+```
+
+5763/690048=0.008351593
+160/690048=0.0002318679
+1405/690048=0.00203609
+254468/690048=0.3687685
+124208/690048=0.1799991
+1290/690048=0.001869435
+302754/690048=0.4387434
+
+
+```{r fig.width=5, fig.height=5}
+Venn_TxVariants_Full <- ggplot() +
+  # 1. region count layer
+  geom_polygon(aes(X, Y, fill = id, group = id), 
+          data = venn_regionedge(data),
+          show.legend = FALSE) +
+  # 2. set edge layer
+  geom_path(aes(X, Y, group = id),
+            color="grey",
+            data = venn_setedge(data),
+            linewidth = 1,
+            show.legend = FALSE) +
+  # 3. set label layer
+  geom_text(aes(X, Y, label = name), 
+            fontface = "bold",
+            data = venn_setlabel(data)) +
+  # 4. region label layer
+  geom_label(aes(X, Y, label = count), 
+             data = venn_regionlabel(data),
+             size = 5,
+             alpha = 0.5) +
+  coord_equal() +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
+    panel.grid.major = element_blank() #remove major gridlines
+  ) +
+  theme_void()
+```
+
+```{r}
+ggsave("HGVSp/Venn_HGVSp_allTx_RefSeq.png", Venn_TxVariants_Full, bg='transparent', width = 5, height = 5)
+```
+
+```{r}
+data$regionData %>% 
+  mutate(item = map_chr(item, paste, collapse = ",")) %>%
+  write_tsv(file = "HGVSp/Venn_HGVSp_allTx_RefSeq.tsv")
+```
+
+```{bash}
+head HGVSp/Venn_HGVSp_allTx_RefSeq.tsv
+```
+
+
+
+
+
+
+
+

@@ -1,0 +1,233 @@
+```{r}
+library(tidyverse)
+```
+
+# VEP 111
+
+```{bash}
+# vep pod
+
+screen -U -s /bin/bash
+
+INTPU_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF
+OUTPUD_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240226_ensembl_vep
+
+```
+
+# GRCh37 PLP
+
+```{bash}
+# VEP pod
+
+cd /opt/ensembl-vep
+
+VEP_INPUT_VCF=$INTPU_DIR/ClinVar_GRCh37_PLP_Tx1_20240107.vcf
+VEP_OUTPUT_VCF=$OUTPUD_DIR/GRCh37_PLP/ClinVar_GRCh37_PLP_Tx1_20240107.vep.vcf
+
+ASSEMBLY=GRCh37
+BUFFER_SIZE=500
+CACHE_VERSION=111
+FASTA_VERSION=110
+FORK=4
+
+./vep \
+  --format vcf \
+  -i $VEP_INPUT_VCF \
+  --vcf \
+  -o $VEP_OUTPUT_VCF \
+  --assembly ${ASSEMBLY} \
+  --offline \
+  --cache \
+  --cache_version ${CACHE_VERSION} \
+  --dir_cache /volume/vep/cache \
+  --fasta /volume/vep/cache/homo_sapiens_fasta/GRCh37/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz \
+  --hgvsg \
+  --hgvs \
+  --total_length \
+  --variant_class \
+  --symbol \
+  --protein \
+  --canonical \
+  --mane \
+  --biotype \
+  --no_stats \
+  --no_escape \
+  --buffer_size ${BUFFER_SIZE} \
+  --fork ${FORK}
+  
+```
+
+# GRCh37 BLB
+
+```{bash}
+# VEP pod
+
+cd /opt/ensembl-vep
+
+VEP_INPUT_VCF=$INTPU_DIR/ClinVar_GRCh37_BLB_Tx1_20240107.vcf
+VEP_OUTPUT_VCF=$OUTPUD_DIR/GRCh37_BLB/ClinVar_GRCh37_BLB_Tx1_20240107.vep.vcf
+
+ASSEMBLY=GRCh37
+BUFFER_SIZE=500
+CACHE_VERSION=111
+FASTA_VERSION=110
+FORK=4
+
+./vep \
+  --format vcf \
+  -i $VEP_INPUT_VCF \
+  --vcf \
+  -o $VEP_OUTPUT_VCF \
+  --assembly ${ASSEMBLY} \
+  --offline \
+  --cache \
+  --cache_version ${CACHE_VERSION} \
+  --dir_cache /volume/vep/cache \
+  --fasta /volume/vep/cache/homo_sapiens_fasta/GRCh37/Homo_sapiens.GRCh37.75.dna.primary_assembly.fa.gz \
+  --hgvsg \
+  --hgvs \
+  --total_length \
+  --variant_class \
+  --symbol \
+  --protein \
+  --canonical \
+  --mane \
+  --biotype \
+  --no_stats \
+  --no_escape \
+  --buffer_size ${BUFFER_SIZE} \
+  --fork ${FORK}
+  
+```
+
+# GRCh38 PLP
+
+```{bash}
+# VEP pod
+
+cd /opt/ensembl-vep
+
+VEP_INPUT_VCF=$INTPU_DIR/ClinVar_GRCh38_PLP_Tx1_20240107.vcf
+VEP_OUTPUT_VCF=$OUTPUD_DIR/GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.vep.vcf
+
+ASSEMBLY=GRCh38
+BUFFER_SIZE=500
+CACHE_VERSION=111
+FASTA_VERSION=110
+FORK=4
+
+./vep \
+  --format vcf \
+  -i $VEP_INPUT_VCF \
+  --vcf \
+  -o $VEP_OUTPUT_VCF \
+  --assembly ${ASSEMBLY} \
+  --offline \
+  --cache \
+  --cache_version ${CACHE_VERSION} \
+  --dir_cache /volume/vep/cache \
+  --fasta /volume/vep/cache/homo_sapiens_fasta/${FASTA_VERSION}_${ASSEMBLY}/Homo_sapiens.GRCh38.dna.toplevel.fa.gz \
+  --hgvsg \
+  --hgvs \
+  --total_length \
+  --variant_class \
+  --symbol \
+  --protein \
+  --canonical \
+  --mane \
+  --biotype \
+  --no_stats \
+  --no_escape \
+  --buffer_size ${BUFFER_SIZE} \
+  --fork ${FORK}
+  
+```
+
+# GRCh38 BLB
+
+```{bash}
+# VEP pod
+
+cd /opt/ensembl-vep
+
+VEP_INPUT_VCF=$INTPU_DIR/ClinVar_GRCh38_BLB_Tx1_20240107.vcf
+VEP_OUTPUT_VCF=$OUTPUD_DIR/GRCh38_BLB/ClinVar_GRCh38_BLB_Tx1_20240107.vep.vcf
+
+ASSEMBLY=GRCh38
+BUFFER_SIZE=500
+CACHE_VERSION=111
+FASTA_VERSION=110
+FORK=4
+
+./vep \
+  --format vcf \
+  -i $VEP_INPUT_VCF \
+  --vcf \
+  -o $VEP_OUTPUT_VCF \
+  --assembly ${ASSEMBLY} \
+  --offline \
+  --cache \
+  --cache_version ${CACHE_VERSION} \
+  --dir_cache /volume/vep/cache \
+  --fasta /volume/vep/cache/homo_sapiens_fasta/${FASTA_VERSION}_${ASSEMBLY}/Homo_sapiens.GRCh38.dna.toplevel.fa.gz \
+  --hgvsg \
+  --hgvs \
+  --total_length \
+  --variant_class \
+  --symbol \
+  --protein \
+  --canonical \
+  --mane \
+  --biotype \
+  --no_stats \
+  --no_escape \
+  --buffer_size ${BUFFER_SIZE} \
+  --fork ${FORK}
+
+```
+
+---
+
+# 這裡bcftools只能用1.18不能用1.19
+```{bash}
+# bcftools pod
+
+cd /volume/rproj/Paper3Annot_2024/ClinVar20240107/20240226_ensembl_vep
+
+#
+IN_VCF=GRCh37_PLP/ClinVar_GRCh37_PLP_Tx1_20240107.vep.vcf
+OUT_TSV=GRCh37_PLP/ClinVar_GRCh37_PLP_Tx1_20240107.query.tsv
+
+bcftools +split-vep -f '%CHROM\t%POS\t%REF\t%ALT\t%TAG\t%CSQ\n' -A tab -d $IN_VCF > $OUT_TSV
+
+#
+IN_VCF=GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.vep.vcf
+OUT_TSV=GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.query.tsv
+
+bcftools +split-vep -f '%CHROM\t%POS\t%REF\t%ALT\t%TAG\t%CSQ\n' -A tab -d $IN_VCF > $OUT_TSV
+
+# 
+IN_VCF=GRCh37_BLB/ClinVar_GRCh37_BLB_Tx1_20240107.vep.vcf
+OUT_TSV=GRCh37_BLB/ClinVar_GRCh37_BLB_Tx1_20240107.query.tsv
+
+bcftools +split-vep -f '%CHROM\t%POS\t%REF\t%ALT\t%TAG\t%CSQ\n' -A tab -d $IN_VCF > $OUT_TSV
+
+# 
+IN_VCF=GRCh38_BLB/ClinVar_GRCh38_BLB_Tx1_20240107.vep.vcf
+OUT_TSV=GRCh38_BLB/ClinVar_GRCh38_BLB_Tx1_20240107.query.tsv
+
+bcftools +split-vep -f '%CHROM\t%POS\t%REF\t%ALT\t%TAG\t%CSQ\n' -A tab -d $IN_VCF > $OUT_TSV
+
+```
+
+
+
+
+
+
+
+
+
+
+
+

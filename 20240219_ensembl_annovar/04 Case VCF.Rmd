@@ -1,0 +1,197 @@
+```{r}
+library(tidyverse)
+```
+
+---
+
+```{r}
+txt_all_variant_BLB <- read_tsv(
+  "GRCh38_BLB/ClinVar_GRCh38_BLB.hg38_multianno.txt"
+)
+
+# 120198
+```
+
+```{r}
+tsv_all_variant_BLB <- read_tsv(
+  "GRCh38_BLB/ClinVar_GRCh38_BLB.ensGene.variant_function",
+  col_names = c("Func_ensGene", "Gene_ensGene", "no_chr", "no_start", "no_end", "no_ref", "no_alt", "chr", "start", "id", "ref", "alt", "QUAL", "FILTER", "key", "INFO", "FORMAT") 
+)
+
+# 178711
+```
+
+```{r}
+tsv_exon_variant_BLB <- read_tsv(
+  "GRCh38_BLB/ClinVar_GRCh38_BLB.ensGene.exonic_variant_function",
+  col_names = c("line", "ExonicFunc_ensGene", "AAChange_ensGene", "no_chr", "no_start", "no_end", "no_ref", "no_alt", "chr", "start", "id", "ref", "alt", "QUAL", "FILTER", "key", "INFO", "FORMAT")
+)
+
+# 86686
+```
+
+---
+
+```{r}
+txt_all_variant_PLP <- read_tsv(
+  "GRCh38_PLP/ClinVar_GRCh38_PLP.hg38_multianno.txt"
+)
+
+# 44351
+```
+
+```{r}
+tsv_all_variant_PLP <- read_tsv(
+  "GRCh38_PLP/ClinVar_GRCh38_PLP.ensGene.variant_function",
+  col_names = c("Func_ensGene", "Gene_ensGene", "no_chr", "no_start", "no_end", "no_ref", "no_alt", "chr", "start", "id", "ref", "alt", "QUAL", "FILTER", "key", "INFO", "FORMAT") 
+)
+
+# 71781
+```
+
+```{r}
+tsv_exon_variant_PLP <- read_tsv(
+  "GRCh38_PLP/ClinVar_GRCh38_PLP.ensGene.exonic_variant_function",
+  col_names = c("line", "ExonicFunc_ensGene", "AAChange_ensGene", "no_chr", "no_start", "no_end", "no_ref", "no_alt", "chr", "start", "id", "ref", "alt", "QUAL", "FILTER", "key", "INFO", "FORMAT")
+)
+
+# 37618
+```
+
+---
+
+# Chr8-60801516-C-CT (B)
+
+```{r}
+txt_all_variant_BLB %>%
+  filter(Chr == "8") %>%
+  filter(Start == 60801516)
+```
+
+```{r}
+tsv_all_variant_BLB %>%
+  filter(key == "TAG=166861|177589")
+
+# NM_001316690,NM_017780, intronic
+```
+
+```{r}
+tsv_exon_variant_BLB %>%
+  filter(key == "TAG=166861|177589")
+
+# 0
+```
+
+
+# Chr11-2588702-G-GT (B)
+
+```{r}
+txt_all_variant_BLB %>%
+  filter(Chr == "11") %>%
+  filter(Start == 2588702)
+```
+
+```{r}
+tsv_all_variant_BLB %>%
+  filter(key == "TAG=923645|915754")
+
+# NM_000218,NM_181798, intronic
+```
+
+```{r}
+tsv_exon_variant_BLB %>%
+  filter(key == "TAG=923645|915754")
+
+# 0
+```
+
+# Chr11-2588702-GT-GG (B)
+
+```{r}
+txt_all_variant_BLB %>%
+  filter(Chr == "11") %>%
+  filter(Start == 2588703)
+```
+
+```{r}
+tsv_all_variant_BLB %>%
+  filter(key == "TAG=593467|584531")
+
+# NM_000218,NM_181798, intronic
+```
+
+```{r}
+tsv_exon_variant_BLB %>%
+  filter(key == "TAG=593467|584531")
+
+# 0
+```
+
+# Chr13-32316490-A-AT (P)
+
+```{r}
+txt_all_variant_PLP %>%
+  filter(Chr == "13") %>%
+  filter(Start == 32316490)
+```
+
+```{r}
+tsv_all_variant_PLP %>%
+  filter(key == "TAG=51509|66177")
+
+# NM_000059, exonic
+# NM_001136571(dist=1127), upstream
+```
+
+```{r}
+tsv_exon_variant_PLP %>%
+  filter(key == "TAG=51509|66177")
+
+# BRCA2:NM_000059:exon2:c.31dupT:p.E13*, stopgain
+```
+
+# Chr13-32316490-AT-A (P)
+
+```{r}
+txt_all_variant_PLP %>%
+  filter(Chr == "13") %>%
+  filter(Start == 32316491)
+```
+
+```{r}
+tsv_all_variant_PLP %>%
+  filter(key == "TAG=51508|66176")
+
+# NM_000059, exonic
+# NM_001136571(dist=1128), upstream
+```
+
+```{r}
+tsv_exon_variant_PLP %>%
+  filter(key == "TAG=51508|66176")
+
+# BRCA2:NM_000059:exon2:c.31delT:p.F12Lfs*13, frameshift deletion
+```
+
+# 需要補VCF
+
+# Chr13-32316490-ATT-A (P 0)
+
+# Chr19-36003378-AG-A (VUS 2)
+
+# Chr1-54999187-A-T (P 2)
+
+# Chr11-2445100-T-A (P 1)
+
+# Chr3-10046725-TAAG-T (B 0)
+
+# Chr3-15601892-CAGGT-C (LP 2)
+
+# Chr10-53823010-C-CCTCTGAATCTTTTCTCT
+
+
+
+
+
+
+

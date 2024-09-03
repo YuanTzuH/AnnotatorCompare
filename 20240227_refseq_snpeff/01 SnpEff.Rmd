@@ -1,0 +1,125 @@
+```{r}
+library(tidyverse)
+```
+
+# SnpEff 5.2
+## GRCh37.p13
+## GRCh38.mane.1.2.refseq
+
+```{bash}
+# snpeff pod
+
+screen -U -s /bin/bash
+
+INTPU_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF
+OUTPUD_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240227_refseq_snpeff
+
+```
+
+# GRCh37 PLP
+
+```{bash}
+# snpeff pod
+
+cd /volume/wgsa/snpEff
+
+SnpEff_INPUT_VCF=$INTPU_DIR/ClinVar_GRCh37_PLP_Tx1_20240107.vcf
+SnpEff_OUTPUT_VCF=$OUTPUD_DIR/GRCh37_PLP/ClinVar_GRCh37_PLP_Tx1_20240107.snpeff.vcf
+
+java -Xmx10g -jar snpEff.jar GRCh37.p13 $SnpEff_INPUT_VCF > $SnpEff_OUTPUT_VCF
+
+```
+
+# GRCh37 BLB
+
+```{bash}
+# snpeff pod
+
+cd /volume/wgsa/snpEff
+
+SnpEff_INPUT_VCF=$INTPU_DIR/ClinVar_GRCh37_BLB_Tx1_20240107.vcf
+SnpEff_OUTPUT_VCF=$OUTPUD_DIR/GRCh37_BLB/ClinVar_GRCh37_BLB_Tx1_20240107.snpeff.vcf
+
+java -Xmx10g -jar snpEff.jar GRCh37.p13 $SnpEff_INPUT_VCF > $SnpEff_OUTPUT_VCF
+
+```
+
+# GRCh38 PLP
+
+```{bash}
+# snpeff pod
+
+cd /volume/wgsa/snpEff
+
+SnpEff_INPUT_VCF=$INTPU_DIR/ClinVar_GRCh38_PLP_Tx1_20240107.vcf
+SnpEff_OUTPUT_VCF=$OUTPUD_DIR/GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.snpeff.vcf
+
+java -Xmx10g -jar snpEff.jar GRCh38.mane.1.2.refseq $SnpEff_INPUT_VCF > $SnpEff_OUTPUT_VCF
+
+```
+
+# GRCh38 BLB
+
+```{bash}
+# snpeff pod
+
+cd /volume/wgsa/snpEff
+
+SnpEff_INPUT_VCF=$INTPU_DIR/ClinVar_GRCh38_BLB_Tx1_20240107.vcf
+SnpEff_OUTPUT_VCF=$OUTPUD_DIR/GRCh38_BLB/ClinVar_GRCh38_BLB_Tx1_20240107.snpeff.vcf
+
+java -Xmx10g -jar snpEff.jar GRCh38.mane.1.2.refseq $SnpEff_INPUT_VCF > $SnpEff_OUTPUT_VCF
+
+```
+
+# 這裡bcftools只能用1.18不能用1.19
+```{bash}
+# bcftools pod
+
+cd /volume/rproj/Paper3Annot_2024/ClinVar20240107/20240227_refseq_snpeff
+
+#
+IN_VCF=GRCh37_PLP/ClinVar_GRCh37_PLP_Tx1_20240107.snpeff.vcf
+OUT_TSV=GRCh37_PLP/ClinVar_GRCh37_PLP_Tx1_20240107.query.tsv
+
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%TAG\t%ANN\t%LOF\t%NMD\n' $IN_VCF > $OUT_TSV
+
+#
+IN_VCF=GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.snpeff.vcf
+OUT_TSV=GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.query.tsv
+
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%TAG\t%ANN\t%LOF\t%NMD\n' $IN_VCF > $OUT_TSV
+
+# 
+IN_VCF=GRCh37_BLB/ClinVar_GRCh37_BLB_Tx1_20240107.snpeff.vcf
+OUT_TSV=GRCh37_BLB/ClinVar_GRCh37_BLB_Tx1_20240107.query.tsv
+
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%TAG\t%ANN\t%LOF\t%NMD\n' $IN_VCF > $OUT_TSV
+
+# 
+IN_VCF=GRCh38_BLB/ClinVar_GRCh38_BLB_Tx1_20240107.snpeff.vcf
+OUT_TSV=GRCh38_BLB/ClinVar_GRCh38_BLB_Tx1_20240107.query.tsv
+
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%TAG\t%ANN\t%LOF\t%NMD\n' $IN_VCF > $OUT_TSV
+
+```
+
+```{bash}
+wc -l GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.query.tsv
+```
+
+```{bash}
+wc -l GRCh38_BLB/ClinVar_GRCh38_BLB_Tx1_20240107.query.tsv
+```
+
+
+
+
+
+
+
+
+
+
+
+

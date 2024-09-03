@@ -1,0 +1,96 @@
+```{r}
+library(tidyverse)
+```
+
+```{bash}
+head -n 40 GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.vep.vcf
+```
+Allele|Consequence|IMPACT|SYMBOL|Gene|Feature_type|Feature|BIOTYPE|EXON|INTRON|HGVSc|HGVSp|cDNA_position|CDS_position|Protein_position|Amino_acids|Codons|Existing_variation|DISTANCE|STRAND|FLAGS|VARIANT_CLASS|SYMBOL_SOURCE|HGNC_ID|CANONICAL|MANE_SELECT|MANE_PLUS_CLINICAL|ENSP|HGVS_OFFSET|HGVSg
+
+```{r}
+tsv_query <- read_tsv(
+  file("GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.query.tsv"), 
+  col_names = c(
+    "chr",
+    "start",
+    "ref",
+    "alt",
+    "key",
+    "Allele",
+    "Consequence",
+    "IMPACT",
+    "SYMBOL",
+    "Gene",
+    "Feature_type",
+    "Feature",
+    "BIOTYPE",
+    "EXON",
+    "INTRON",
+    "HGVSc",
+    "HGVSp",
+    "cDNA_position",
+    "CDS_position",
+    "Protein_position",
+    "Amino_acids",
+    "Codons",
+    "Existing_variation",
+    "DISTANCE",
+    "STRAND",
+    "FLAGS",
+    "VARIANT_CLASS",
+    "SYMBOL_SOURCE",
+    "HGNC_ID",
+    "CANONICAL",
+    "MANE_SELECT",
+    "MANE_PLUS_CLINICAL",
+    "ENSP",
+    "HGVS_OFFSET",
+    "HGVSg"
+  ),
+  col_types = cols(start = col_number(), .default = col_character())
+)
+```
+
+```{r}
+df_ClinVar_GRCh38_PLP_vep_ensembl <- tsv_query %>%
+  select(
+    key, chr, start, ref, alt,
+    VARIANT_CLASS, SYMBOL, Consequence, IMPACT,
+    Gene, Feature, Feature_type, BIOTYPE, STRAND, FLAGS,
+    EXON, INTRON, cDNA_position, CDS_position, DISTANCE,
+    ENSP, Protein_position, Amino_acids, Codons,
+    HGVSg, HGVSc, HGVSp,
+    CANONICAL, MANE_SELECT, MANE_PLUS_CLINICAL, HGVS_OFFSET
+  )
+```
+
+---
+
+```{r}
+df_ClinVar_GRCh38_PLP_vep_ensembl %>%
+  mutate(Tx = str_extract(Feature, '[A-Z]+')) %>%
+  # filter(is.na(Tx))
+  # 0
+  group_by(Tx) %>%
+  count()
+```
+
+```{r}
+df_ClinVar_GRCh38_PLP_vep_ensembl %>%
+  filter(!str_detect(Feature, '^ENST'))
+
+# 0
+```
+
+---
+
+```{r}
+save(df_ClinVar_GRCh38_PLP_vep_ensembl, file = "GRCh38_PLP/df_ClinVar_GRCh38_PLP_vep_ensembl.RData")
+```
+
+
+
+
+
+
+

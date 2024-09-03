@@ -1,0 +1,264 @@
+```{r}
+library(tidyverse)
+```
+
+---
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh38_PLP_Tx1.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh38_BLB_Tx1.RData")
+```
+
+```{r}
+ClinVar_df <- bind_rows(df_clinvar_GRCh38_BLB_Tx1, df_clinvar_GRCh38_PLP_Tx1) %>%
+  select(key, Type, NM, HGVSc, HGVSp)
+```
+
+```{r}
+rm(df_clinvar_GRCh38_BLB_Tx1, df_clinvar_GRCh38_PLP_Tx1)
+```
+
+---
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh38_PLP/df_ClinVar_GRCh38_PLP_annovar_refseq.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh38_BLB/df_ClinVar_GRCh38_BLB_annovar_refseq.RData")
+
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240227_refseq_snpeff/GRCh38_PLP/df_ClinVar_GRCh38_PLP_snpeff_refseq.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240227_refseq_snpeff/GRCh38_BLB/df_ClinVar_GRCh38_BLB_snpeff_refseq.RData")
+
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240226_refseq_vep/GRCh38_PLP/df_ClinVar_GRCh38_PLP_vep_refseq.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240226_refseq_vep/GRCh38_BLB/df_ClinVar_GRCh38_BLB_vep_refseq.RData")
+
+```
+
+---
+
+```{r}
+AAnameList <- c(
+  "T" = "Thr",
+  "G" = "Gly",
+  "A" = "Ala",
+  "P" = "Pro",
+  "V" = "Val",
+  "L" = "Leu",
+  "I" = "Ile",
+  "F" = "Phe",
+  "W" = "Trp",
+  "Y" = "Tyr",
+  "D" = "Asp",
+  "H" = "His",
+  "N" = "Asn",
+  "E" = "Glu",
+  "K" = "Lys",
+  "Q" = "Gln",
+  "M" = "Met",
+  "R" = "Arg",
+  "S" = "Ser",
+  "C" = "Cys",
+  "X" = "Ter",
+  "\\*" = "Ter"
+)
+```
+
+# ANNOVAR
+```{r}
+ANNOVAR_HGVScp_case <- bind_rows(
+  df_ClinVar_GRCh38_PLP_annovar_refseq %>% select(key, NM, HGVSc, HGVSp),
+  df_ClinVar_GRCh38_BLB_annovar_refseq %>% select(key, NM, HGVSc, HGVSp)
+) %>%
+  filter(HGVSp != ".") %>%
+  distinct() %>%
+  mutate(HGVSp3 = str_replace(HGVSp, '[AFCUDNEQGHLIKOMPRSTVWYX]fs\\*\\d+', 'fs')) %>%
+  mutate(p1 = str_extract(HGVSp3, '([AFCUDNEQGHLIKOMPRSTVWYX])(\\d+)([AFCUDNEQGHLIKOMPRSTVWYX])$', group = 1)) %>%
+  mutate(p2 = str_extract(HGVSp3, '([AFCUDNEQGHLIKOMPRSTVWYX])(\\d+)([AFCUDNEQGHLIKOMPRSTVWYX])$', group = 2)) %>%
+  mutate(p3 = str_extract(HGVSp3, '([AFCUDNEQGHLIKOMPRSTVWYX])(\\d+)([AFCUDNEQGHLIKOMPRSTVWYX])$', group = 3)) %>%
+  mutate(
+    p3 = if_else(
+      p3 == p1,
+      "=",
+      p3
+    )
+  ) %>%
+  mutate(p1 = str_replace_all(p1, AAnameList)) %>%
+  mutate(p3 = str_replace_all(p3, AAnameList)) %>%
+  mutate(ANNOVAR_HGVSpNom = str_c("p.", p1, p2, p3)) %>%
+  mutate(
+    ANNOVAR_HGVSpNom = if_else(
+      is.na(ANNOVAR_HGVSpNom),
+      str_replace_all(HGVSp3, AAnameList),
+      ANNOVAR_HGVSpNom
+    )
+  ) %>%
+  mutate(ANNOVAR_HGVScNom = if_else(str_detect(HGVSc, 'del[ATCG]+'), str_replace(HGVSc, '(.*del)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(ANNOVAR_HGVScNom = if_else(str_detect(ANNOVAR_HGVScNom, 'delins[ATCG]+'), str_replace(ANNOVAR_HGVScNom, '(.*delins)[ATCG]+', '\\1'), ANNOVAR_HGVScNom)) %>%
+  mutate(ANNOVAR_HGVScNom = if_else(str_detect(ANNOVAR_HGVScNom, 'dup[ATCG]+'), str_replace(ANNOVAR_HGVScNom, '(.*dup)[ATCG]+', '\\1'), ANNOVAR_HGVScNom)) %>%
+  mutate(ANNOVAR_HGVScNom = if_else(str_detect(ANNOVAR_HGVScNom, 'ins[ATCG]+'), str_replace(ANNOVAR_HGVScNom, '(.*ins)[ATCG]+', '\\1'), ANNOVAR_HGVScNom)) %>%
+  mutate(ANNOVAR_HGVScNom = if_else(str_detect(ANNOVAR_HGVScNom, 'inv[ATCG]+'), str_replace(ANNOVAR_HGVScNom, '(.*inv)[ATCG]+', '\\1'), ANNOVAR_HGVScNom)) %>%
+  rename(
+    ANNOVAR_HGVSc = HGVSc,
+    ANNOVAR_HGVSp = HGVSp
+  ) %>%
+  select(key, NM, ANNOVAR_HGVScNom, ANNOVAR_HGVSc, ANNOVAR_HGVSpNom, ANNOVAR_HGVSp)
+
+# 384,599
+```
+
+# SnpEff
+```{r}
+SnpEff_HGVScp_case <- bind_rows(
+  df_ClinVar_GRCh38_PLP_snpeff_refseq %>% select(key, NM, HGVSc, HGVSp),
+  df_ClinVar_GRCh38_BLB_snpeff_refseq %>% select(key, NM, HGVSc, HGVSp)
+) %>%
+  filter(HGVSp != ".") %>%
+  distinct() %>%
+  mutate(p1 = str_extract(HGVSp, '([ACGHILMPSTV]\\w{2})(\\d+)([ACGHILMPSTV]\\w{2})$', group = 1)) %>%
+  mutate(p2 = str_extract(HGVSp, '([ACGHILMPSTV]\\w{2})(\\d+)([ACGHILMPSTV]\\w{2})$', group = 2)) %>%
+  mutate(p3 = str_extract(HGVSp, '([ACGHILMPSTV]\\w{2})(\\d+)([ACGHILMPSTV]\\w{2})$', group = 3)) %>%
+  mutate(
+    p3 = if_else(
+      p3 == p1,
+      "=",
+      p3
+    )
+  ) %>%
+  mutate(
+    SnpEff_HGVSpNom = if_else(
+      is.na(p1),
+      str_replace(HGVSp, '\\*', "Ter"),
+      str_c("p.", p1, p2, p3)
+    )
+  ) %>%
+  mutate(SnpEff_HGVScNom = if_else(str_detect(HGVSc, 'del[ATCG]+'), str_replace(HGVSc, '(.*del)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(SnpEff_HGVScNom = if_else(str_detect(SnpEff_HGVScNom, 'delins[ATCG]+'), str_replace(SnpEff_HGVScNom, '(.*delins)[ATCG]+', '\\1'), SnpEff_HGVScNom)) %>%
+  mutate(SnpEff_HGVScNom = if_else(str_detect(SnpEff_HGVScNom, 'dup[ATCG]+'), str_replace(SnpEff_HGVScNom, '(.*dup)[ATCG]+', '\\1'), SnpEff_HGVScNom)) %>%
+  mutate(SnpEff_HGVScNom = if_else(str_detect(SnpEff_HGVScNom, 'ins[ATCG]+'), str_replace(SnpEff_HGVScNom, '(.*ins)[ATCG]+', '\\1'), SnpEff_HGVScNom)) %>%
+  mutate(SnpEff_HGVScNom = if_else(str_detect(SnpEff_HGVScNom, 'inv[ATCG]+'), str_replace(SnpEff_HGVScNom, '(.*inv)[ATCG]+', '\\1'), SnpEff_HGVScNom)) %>%
+  rename(
+    SnpEff_HGVSc = HGVSc,
+    SnpEff_HGVSp = HGVSp
+  ) %>%
+  select(key, NM, SnpEff_HGVScNom, SnpEff_HGVSc, SnpEff_HGVSpNom, SnpEff_HGVSp)
+
+# 127,063
+```
+
+# VEP
+```{r}
+VEP_HGVScp_case <- bind_rows(
+  df_ClinVar_GRCh38_PLP_vep_refseq %>% select(key, NM, SYMBOL, HGVSc, HGVSp),
+  df_ClinVar_GRCh38_BLB_vep_refseq%>% select(key, NM, SYMBOL, HGVSc, HGVSp)
+) %>%
+  filter(HGVSp != ".") %>%
+  mutate(HGVSc = str_extract(HGVSc, '[a-z]\\..*')) %>%
+  distinct() %>%
+  mutate(HGVSp = str_extract(HGVSp, 'p\\..*')) %>%
+  mutate(VEP_HGVSpNom = str_replace(HGVSp, '[ACGHILMPSTV]\\w{2}fsTer[\\d?]+', 'fs')) %>%
+  mutate(VEP_HGVScNom = if_else(str_detect(HGVSc, 'del[ATCG]+'), str_replace(HGVSc, '(.*del)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(VEP_HGVScNom = if_else(str_detect(VEP_HGVScNom, 'delins[ATCG]+'), str_replace(VEP_HGVScNom, '(.*delins)[ATCG]+', '\\1'), VEP_HGVScNom)) %>%
+  mutate(VEP_HGVScNom = if_else(str_detect(VEP_HGVScNom, 'dup[ATCG]+'), str_replace(VEP_HGVScNom, '(.*dup)[ATCG]+', '\\1'), VEP_HGVScNom)) %>%
+  mutate(VEP_HGVScNom = if_else(str_detect(VEP_HGVScNom, 'ins[ATCG]+'), str_replace(VEP_HGVScNom, '(.*ins)[ATCG]+', '\\1'), VEP_HGVScNom)) %>%
+  mutate(VEP_HGVScNom = if_else(str_detect(VEP_HGVScNom, 'inv[ATCG]+'), str_replace(VEP_HGVScNom, '(.*inv)[ATCG]+', '\\1'), VEP_HGVScNom)) %>%
+  rename(
+    VEP_HGVSc = HGVSc,
+    VEP_HGVSp = HGVSp
+  ) %>%
+  select(key, NM, VEP_HGVScNom, VEP_HGVSc, VEP_HGVSpNom, VEP_HGVSp)
+
+# 682,720
+```
+
+
+```{r}
+rm(
+  df_ClinVar_GRCh38_PLP_annovar_refseq,
+  df_ClinVar_GRCh38_BLB_annovar_refseq,
+  df_ClinVar_GRCh38_PLP_snpeff_refseq,
+  df_ClinVar_GRCh38_BLB_snpeff_refseq,
+  df_ClinVar_GRCh38_PLP_vep_refseq,
+  df_ClinVar_GRCh38_BLB_vep_refseq
+)
+```
+
+---
+
+```{r}
+Case_HGVScp <- ClinVar_df %>%
+  left_join(
+    ANNOVAR_HGVScp_case,
+    by = c("key", "NM")
+  ) %>%
+  left_join(
+    SnpEff_HGVScp_case,
+    by = c("key", "NM")
+  ) %>%
+  left_join(
+    VEP_HGVScp_case,
+    by = c("key", "NM")
+  ) %>%
+  select(
+    key, Type, NM,
+    HGVSc, ANNOVAR_HGVScNom, SnpEff_HGVScNom, VEP_HGVScNom,
+    ANNOVAR_HGVSc, SnpEff_HGVSc, VEP_HGVSc,
+    HGVSp, ANNOVAR_HGVSpNom, SnpEff_HGVSpNom, VEP_HGVSpNom,
+    ANNOVAR_HGVSp, SnpEff_HGVSp, VEP_HGVSp
+  ) %>%
+  filter(!(
+    is.na(ANNOVAR_HGVSc) |
+    is.na(SnpEff_HGVSc) |
+    is.na(VEP_HGVSc)
+  )) %>%
+  filter(
+    HGVSc != ANNOVAR_HGVScNom |
+    HGVSc != SnpEff_HGVScNom |
+    HGVSc != VEP_HGVScNom
+  ) %>%
+  arrange(Type, key, NM)
+
+# 7988
+```
+
+```{r}
+rm(ANNOVAR_HGVScp_case, SnpEff_HGVScp_case, VEP_HGVScp_case)
+```
+
+---
+
+```{r}
+Case_HGVScp %>%
+  group_by(Type) %>%
+  count() %>%
+  arrange(-n)
+```
+
+---
+
+輸出給瑜安
+
+```{r}
+Case_HGVScp[Case_HGVScp == "."] = NA_character_
+```
+
+```{r}
+Case_HGVScp %>%
+  write_tsv("Case_HGVSc_HGVSp.tsv", na = "-NA-")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

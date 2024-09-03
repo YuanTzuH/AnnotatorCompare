@@ -1,0 +1,277 @@
+```{r}
+library(tidyverse)
+```
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240226_ensembl_vep/GRCh37_BLB/df_ClinVar_GRCh37_BLB_vep_ensembl.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240226_ensembl_vep/GRCh37_PLP/df_ClinVar_GRCh37_PLP_vep_ensembl.RData")
+```
+
+---
+
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_vep_ensembl,
+  df_ClinVar_GRCh37_PLP_vep_ensembl
+) %>%
+  select(Consequence) %>%
+  separate_rows(Consequence, sep = "&") %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(Consequence)
+
+```
+
+---
+
+# NMD_transcript_variant
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_vep_ensembl,
+  df_ClinVar_GRCh37_PLP_vep_ensembl
+) %>%
+  select(key, Feature, Consequence, HGVSc, HGVSp) %>%
+  filter(str_detect(Consequence, "NMD_transcript_variant"))
+```
+不會單獨出現，若有...就Others
+
+# stop_retained_variant
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_vep_ensembl,
+  df_ClinVar_GRCh37_PLP_vep_ensembl
+) %>%
+  select(key, Feature, Consequence, HGVSc, HGVSp) %>%
+  filter(str_detect(Consequence, "stop_retained_variant"))
+```
+伴隨3_prime_UTR_variant時沒有HGVSp
+太難搞，Others
+
+# start_retained_variant
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_vep_ensembl,
+  df_ClinVar_GRCh37_PLP_vep_ensembl
+) %>%
+  select(key, Feature, Consequence, HGVSc, HGVSp) %>%
+  filter(str_detect(Consequence, "start_retained_variant"))
+```
+沒有
+
+# incomplete_terminal_codon_variant
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_vep_ensembl,
+  df_ClinVar_GRCh37_PLP_vep_ensembl
+) %>%
+  select(key, Feature, Consequence, HGVSc, HGVSp) %>%
+  filter(str_detect(Consequence, "incomplete_terminal_codon_variant"))
+```
+伴隨3_prime_UTR_variant時沒有HGVSp
+太難搞，Others
+
+# protein_altering_variant
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_vep_ensembl,
+  df_ClinVar_GRCh37_PLP_vep_ensembl
+) %>%
+  select(key, Feature, Consequence, HGVSc, HGVSp) %>%
+  filter(str_detect(Consequence, "protein_altering_variant"))
+```
+兩種組合出現
+protein_altering_variant&splice_region_variant
+stop_gained&protein_altering_variant
+都有HGVSp
+太難搞，Others
+
+# coding_sequence_variant
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_vep_ensembl,
+  df_ClinVar_GRCh37_PLP_vep_ensembl
+) %>%
+  select(key, Feature, Consequence, HGVSc, HGVSp) %>%
+  filter(str_detect(Consequence, "coding_sequence_variant")) %>%
+  filter(str_length(Consequence) < 50)
+```
+有HGVSp
+太難搞，Others
+
+# non_coding_transcript_exon_variant
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_vep_ensembl,
+  df_ClinVar_GRCh37_PLP_vep_ensembl
+) %>%
+  select(key, Feature, Consequence, HGVSc, HGVSp) %>%
+  filter(str_detect(Consequence, "non_coding_transcript_exon_variant"))
+```
+沒有HGVSp
+
+# non_coding_transcript_variant
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_vep_ensembl,
+  df_ClinVar_GRCh37_PLP_vep_ensembl
+) %>%
+  select(key, Feature, Consequence, HGVSc, HGVSp) %>%
+  filter(str_detect(Consequence, "non_coding_transcript_variant"))
+```
+沒有HGVSp
+
+# splice_polypyrimidine_tract_variant
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_vep_ensembl,
+  df_ClinVar_GRCh37_PLP_vep_ensembl
+) %>%
+  select(key, Feature, Consequence, HGVSc, HGVSp) %>%
+  filter(str_detect(Consequence, "splice_polypyrimidine_tract_variant"))
+```
+當intron_variant
+
+# splice_donor_5th_base_variant
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_vep_ensembl,
+  df_ClinVar_GRCh37_PLP_vep_ensembl
+) %>%
+  select(key, Feature, Consequence, HGVSc, HGVSp) %>%
+  filter(str_detect(Consequence, "splice_donor_5th_base_variant"))
+```
+當intron_variant
+
+# mature_miRNA_variant
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_vep_ensembl,
+  df_ClinVar_GRCh37_PLP_vep_ensembl
+) %>%
+  select(key, Feature, Consequence, HGVSc, HGVSp) %>%
+  filter(str_detect(Consequence, "mature_miRNA_variant"))
+```
+單獨存在
+沒有HGVSp
+Others
+
+---
+
+# Concordance
+
+```{r}
+CSQ_ClinVar_GRCh37_BLB_vep_ensembl <- df_ClinVar_GRCh37_BLB_vep_ensembl %>%
+  mutate(
+    Consequence = case_when(
+      
+      str_detect(Consequence, "splice_acceptor_variant") ~ "splicing_variant",
+      str_detect(Consequence, "splice_donor_variant") ~ "splicing_variant",
+      
+      str_detect(Consequence, "stop_gained") ~ "nonsense",
+      
+      str_detect(Consequence, "frameshift_variant") ~ "frameshift_variant",
+      
+      str_detect(Consequence, "stop_lost") ~ "stop_lost",
+      str_detect(Consequence, "start_lost") ~ "initiatior_codon_variant",
+      
+      str_detect(Consequence, "inframe_") ~ "inframe_variant",
+      
+      str_detect(Consequence, "missense_variant") ~ "missense_variant",
+      
+      str_detect(Consequence, "synonymous_variant") ~ "synonymous_variant",
+
+      str_detect(Consequence, "5_prime_UTR_variant") ~ "5_prime_UTR_variant",
+      str_detect(Consequence, "3_prime_UTR_variant") ~ "3_prime_UTR_variant",
+      
+      str_detect(Consequence, "non_coding_transcript_exon_variant") ~ "non_coding_transcript_variant",
+      str_detect(Consequence, "non_coding_transcript_variant") ~ "non_coding_transcript_variant",
+      
+      str_detect(Consequence, "protein_altering_variant") ~ "Others",
+      str_detect(Consequence, "coding_sequence_variant") ~ "Others",
+      str_detect(Consequence, "stop_retained_variant") ~ "Others",
+      str_detect(Consequence, "incomplete_terminal_codon_variant") ~ "Others",
+      str_detect(Consequence, "start_retained_variant") ~ "Others",
+      
+      str_detect(Consequence, "intron_variant") ~ "intron_variant",
+      str_detect(Consequence, "splice_donor_5th_base_variant") ~ "intron_variant",
+      str_detect(Consequence, "splice_region_variant") ~ "intron_variant",
+      str_detect(Consequence, "splice_donor_region_variant") ~ "intron_variant",
+      str_detect(Consequence, "splice_polypyrimidine_tract_variant") ~ "intron_variant",
+      
+      str_detect(Consequence, "upstream_gene_variant") ~ "genic_upstream_transcript_variant",
+      str_detect(Consequence, "downstream_gene_variant") ~ "genic_downstream_transcript_variant",
+      
+      str_detect(Consequence, "intergenic_variant") ~ "intergenic_variant",
+      
+      TRUE ~ "Others"
+      
+    )
+  ) %>%
+  select(key, Feature, Consequence) %>%
+  mutate(Feature = str_extract(Feature, '[^\\.]+'))
+```
+
+```{r}
+save(CSQ_ClinVar_GRCh37_BLB_vep_ensembl, file = "CSQ_concordance/CSQ_ClinVar_GRCh37_BLB_vep_ensembl.RData")
+```
+
+
+```{r}
+CSQ_ClinVar_GRCh37_PLP_vep_ensembl <- df_ClinVar_GRCh37_PLP_vep_ensembl %>%
+  mutate(
+    Consequence = case_when(
+      
+      str_detect(Consequence, "splice_acceptor_variant") ~ "splicing_variant",
+      str_detect(Consequence, "splice_donor_variant") ~ "splicing_variant",
+      
+      str_detect(Consequence, "stop_gained") ~ "nonsense",
+      
+      str_detect(Consequence, "frameshift_variant") ~ "frameshift_variant",
+      
+      str_detect(Consequence, "stop_lost") ~ "stop_lost",
+      str_detect(Consequence, "start_lost") ~ "initiatior_codon_variant",
+      
+      str_detect(Consequence, "inframe_") ~ "inframe_variant",
+      
+      str_detect(Consequence, "missense_variant") ~ "missense_variant",
+      
+      str_detect(Consequence, "synonymous_variant") ~ "synonymous_variant",
+
+      str_detect(Consequence, "5_prime_UTR_variant") ~ "5_prime_UTR_variant",
+      str_detect(Consequence, "3_prime_UTR_variant") ~ "3_prime_UTR_variant",
+      
+      str_detect(Consequence, "non_coding_transcript_exon_variant") ~ "non_coding_transcript_variant",
+      str_detect(Consequence, "non_coding_transcript_variant") ~ "non_coding_transcript_variant",
+      
+      str_detect(Consequence, "protein_altering_variant") ~ "Others",
+      str_detect(Consequence, "coding_sequence_variant") ~ "Others",
+      str_detect(Consequence, "stop_retained_variant") ~ "Others",
+      str_detect(Consequence, "incomplete_terminal_codon_variant") ~ "Others",
+      str_detect(Consequence, "start_retained_variant") ~ "Others",
+      
+      str_detect(Consequence, "intron_variant") ~ "intron_variant",
+      str_detect(Consequence, "splice_donor_5th_base_variant") ~ "intron_variant",
+      str_detect(Consequence, "splice_region_variant") ~ "intron_variant",
+      str_detect(Consequence, "splice_donor_region_variant") ~ "intron_variant",
+      str_detect(Consequence, "splice_polypyrimidine_tract_variant") ~ "intron_variant",
+      
+      str_detect(Consequence, "upstream_gene_variant") ~ "genic_upstream_transcript_variant",
+      str_detect(Consequence, "downstream_gene_variant") ~ "genic_downstream_transcript_variant",
+      
+      str_detect(Consequence, "intergenic_variant") ~ "intergenic_variant",
+      
+      TRUE ~ "Others"
+      
+    )
+  ) %>%
+  select(key, Feature, Consequence) %>%
+  mutate(Feature = str_extract(Feature, '[^\\.]+'))
+```
+
+```{r}
+save(CSQ_ClinVar_GRCh37_PLP_vep_ensembl, file = "CSQ_concordance/CSQ_ClinVar_GRCh37_PLP_vep_ensembl.RData")
+```
+
+
+
+

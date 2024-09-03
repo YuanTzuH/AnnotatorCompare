@@ -1,0 +1,368 @@
+```{r}
+library(tidyverse)
+```
+
+---
+
+要接在`Fig3 HGVSp RefSeq ClinVar GRCh38.Rmd`之後
+
+```{r}
+rm(
+  ANNOVAR,
+  SnpEff,
+  VEP,
+  All,
+  Venn_TxVariants_ClinVar,
+  data
+)
+```
+
+```{r}
+rm(
+  ANNOVAR_HGVSp_refseq_all,
+  SnpEff_HGVSp_refseq_all,
+  VEP_HGVSp_refseq_all
+)
+```
+
+
+```{r}
+ClinVar_df <- bind_rows(df_clinvar_GRCh38_BLB_Tx1, df_clinvar_GRCh38_PLP_Tx1) %>%
+  select(key, Type, NM, HGVSp)
+
+# 164,549
+```
+
+```{r}
+ClinVar_df %>%
+  filter(!str_detect(HGVSp, "^p"))
+
+# 0
+```
+
+```{r}
+ClinVar_df %>% filter(is.na(HGVSp))
+
+# 41,771
+```
+
+```{r}
+ClinVar_df <- ClinVar_df %>% filter(!is.na(HGVSp))
+
+# 122778
+```
+
+```{r}
+length(unique(ClinVar_df$NM))
+
+# 4114
+```
+
+---
+
+```{r}
+ClinVar_HGVSp_annovar <- ClinVar_df %>%
+  left_join(
+    ANNOVAR_clinvar,
+    by = c("key", "NM")
+  ) 
+
+# 122778
+```
+
+```{r}
+ClinVar_HGVSp_annovar %>%
+  filter(is.na(ANNOVAR) | (HGVSp != ANNOVAR))
+
+# 2334
+```
+
+輸出給瑜安
+```{r}
+ClinVar_HGVSp_annovar %>%
+  filter(is.na(ANNOVAR) | (HGVSp != ANNOVAR)) %>%
+  separate(key, into = c("VariationID", "AlleleID"), sep = "\\|", remove = T) %>%
+  write_tsv("HGVSp/HGVSp_ClinVar_VS_ANNOVAR.tsv", na = "-NA-")
+
+```
+
+---
+
+```{r}
+ClinVar_HGVSp_snpeff <- ClinVar_df %>%
+  left_join(
+    SnpEff_clinvar,
+    by = c("key", "NM")
+  )
+
+# 122778
+```
+
+```{r}
+ClinVar_HGVSp_snpeff %>%
+  filter(is.na(SnpEff) | (HGVSp != SnpEff))
+
+# 1750
+```
+
+輸出給瑜安
+```{r}
+ClinVar_HGVSp_snpeff %>%
+  filter(is.na(SnpEff) | (HGVSp != SnpEff)) %>%
+  separate(key, into = c("VariationID", "AlleleID"), sep = "\\|", remove = T) %>%
+  write_tsv("HGVSp/HGVSp_ClinVar_VS_SnpEff.tsv", na = "-NA-")
+
+```
+
+---
+
+```{r}
+ClinVar_HGVSp_vep <- ClinVar_df %>%
+  left_join(
+    VEP_clinvar,
+    by = c("key", "NM")
+  )
+
+# 122778
+```
+
+```{r}
+ClinVar_HGVSp_vep %>%
+  filter(is.na(VEP) | (HGVSp != VEP))
+
+# 1068
+```
+
+輸出給瑜安
+```{r}
+ClinVar_HGVSp_vep %>%
+  filter(is.na(VEP) | (HGVSp != VEP)) %>%
+  separate(key, into = c("VariationID", "AlleleID"), sep = "\\|", remove = T) %>%
+  write_tsv("HGVSp/HGVSp_ClinVar_VS_VEP.tsv", na = "-NA-")
+
+```
+
+---
+
+```{r}
+(122778-2334)/122778
+(122778-1750)/122778
+(122778-1068)/122778
+```
+
+```{r fig.width=3, fig.height=3}
+barplot_ClinVar_HGVSp <- tibble(
+  Annotator = c("ANNOVAR", "SnpEff", "VEP"),
+  Fraction = c(0.9809901, 0.9857466, 0.9913014)
+) %>%
+  mutate(Annotator = factor(Annotator, levels = c("ANNOVAR", "SnpEff", "VEP"))) %>%
+  ggplot(aes(x = Annotator, y = Fraction)) +
+  geom_bar(stat="identity", fill = "#619CFF") +
+  geom_text(aes(label = round(Fraction, digits = 3)), vjust=1.6, color="white", position = position_dodge(0.9), size = 5) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    panel.grid.major = element_blank(), #remove major gridlines
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+    legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) +
+  xlab("") +
+  ylim(0, 1) +
+  ylab("Fraction of Match ClinVar")
+```
+
+縮放
+```{r fig.width=3, fig.height=3}
+barplot_ClinVar_HGVSp <- tibble(
+  Annotator = c("ANNOVAR", "SnpEff", "VEP"),
+  Fraction = c(0.9809901, 0.9857466, 0.9913014)
+) %>%
+  mutate(
+    ScaledFraction = (Fraction - 0.95) * 20,  # 縮放數據
+    Annotator = factor(Annotator, levels = c("ANNOVAR", "SnpEff", "VEP"))
+  ) %>%
+  ggplot(aes(x = Annotator, y = ScaledFraction)) +
+  geom_bar(stat="identity", fill = "#619CFF") +
+  geom_text(aes(label = round(Fraction, digits = 3)), vjust=1.6, color="white", position = position_dodge(0.9), size = 5) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    panel.grid.major = element_blank(), #remove major gridlines
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+    legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) +
+  xlab("") +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2), labels = c("0.95", "0.96", "0.97", "0.98", "0.99", "1.00")) +
+  ylab("Fraction of Match ClinVar")
+```
+
+```{r}
+ggsave("HGVSp/barplot_HGVSp_ClinVar.png", barplot_ClinVar_HGVSp, bg='transparent', width = unit(3, "cm"), height = unit(3, "cm"))
+```
+
+---
+
+# Type
+
+```{r}
+ClinVar_df %>%
+  group_by(Type) %>%
+  count()
+```
+
+## ANNOVAR
+
+```{r}
+ClinVar_HGVSp_annovar %>%
+  filter(is.na(ANNOVAR) | (HGVSp != ANNOVAR)) %>%
+  group_by(Type) %>%
+  count()
+```
+
+```{r}
+(8636-617)/8636
+(3667-206)/3667
+(144-51)/144
+(473-33)/473
+(27-4)/27
+(2080-378)/2080
+(107751-1045)/107751
+```
+
+```{r fig.width=5.5, fig.height=4}
+barplot_ClinVar_HGVSp <- tibble(
+  Type = c("Deletion", "Duplication", "Indel", "Insertion", "Inversion", "Microsatellite", "SNV"),
+  Fraction = c(0.9285549, 0.9438233, 0.6458333, 0.9302326, 0.8518519, 0.8182692, 0.9903017)
+) %>%
+  mutate(Type = factor(Type, levels = c("Deletion", "Duplication", "Indel", "Insertion", "Inversion", "Microsatellite", "SNV"))) %>%
+  ggplot(aes(x = Type, y = Fraction)) +
+  geom_bar(stat="identity", fill = "#00BFC4") +
+  # geom_text(aes(label = round(Fraction, digits = 3)), vjust=1.6, color="white", position = position_dodge(0.9), size = 5) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    panel.grid.major = element_blank(), #remove major gridlines
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+    legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) +
+  xlab("") +
+  ylim(0, 1) +
+  ylab("Fraction of Match ClinVar")
+```
+
+```{r}
+ggsave("HGVSp/barplot_HGVSpType_annovar.png", barplot_ClinVar_HGVSp, bg='transparent', width = unit(5.5, "cm"), height = unit(4, "cm"))
+```
+
+## SnpEff
+
+```{r}
+ClinVar_HGVSp_snpeff %>%
+  filter(is.na(SnpEff) | (HGVSp != SnpEff)) %>%
+  group_by(Type) %>%
+  count()
+```
+
+```{r}
+(8636-591)/8636
+(3667-425)/3667
+(144-40)/144
+(473-57)/473
+(27-4)/27
+(2080-346)/2080
+(107751-287)/107751
+```
+
+```{r fig.width=5.5, fig.height=4}
+barplot_ClinVar_HGVSp <- tibble(
+  Type = c("Deletion", "Duplication", "Indel", "Insertion", "Inversion", "Microsatellite", "SNV"),
+  Fraction = c(0.9315655, 0.8841014, 0.7222222, 0.8794926, 0.8518519, 0.8336538, 0.9973365)
+) %>%
+  mutate(Type = factor(Type, levels = c("Deletion", "Duplication", "Indel", "Insertion", "Inversion", "Microsatellite", "SNV"))) %>%
+  ggplot(aes(x = Type, y = Fraction)) +
+  geom_bar(stat="identity", fill = "#00BFC4") +
+  # geom_text(aes(label = round(Fraction, digits = 3)), vjust=1.6, color="white", position = position_dodge(0.9), size = 5) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    panel.grid.major = element_blank(), #remove major gridlines
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+    legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) +
+  xlab("") +
+  ylim(0, 1) +
+  ylab("Fraction of Match ClinVar")
+```
+
+```{r}
+ggsave("HGVSp/barplot_HGVSpType_snpeff.png", barplot_ClinVar_HGVSp, bg='transparent', width = unit(5.5, "cm"), height = unit(4, "cm"))
+```
+
+## VEP
+
+```{r}
+ClinVar_HGVSp_vep %>%
+  filter(is.na(VEP) | (HGVSp != VEP)) %>%
+  group_by(Type) %>%
+  count()
+```
+
+```{r}
+(8636-540)/8636
+(3667-106)/3667
+(144-4)/144
+(473-27)/473
+(27-0)/27
+(2080-268)/2080
+(107751-123)/107751
+```
+
+```{r fig.width=5.5, fig.height=4}
+barplot_ClinVar_HGVSp <- tibble(
+  Type = c("Deletion", "Duplication", "Indel", "Insertion", "Inversion", "Microsatellite", "SNV"),
+  Fraction = c(0.9374711, 0.9710935, 0.9722222, 0.9429175, 1, 0.8711538, 0.9988585)
+) %>%
+  mutate(Type = factor(Type, levels = c("Deletion", "Duplication", "Indel", "Insertion", "Inversion", "Microsatellite", "SNV"))) %>%
+  ggplot(aes(x = Type, y = Fraction)) +
+  geom_bar(stat="identity", fill = "#00BFC4") +
+  # geom_text(aes(label = round(Fraction, digits = 3)), vjust=1.6, color="white", position = position_dodge(0.9), size = 5) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    panel.grid.major = element_blank(), #remove major gridlines
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+    legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) +
+  xlab("") +
+  ylim(0, 1) +
+  ylab("Fraction of Match ClinVar")
+```
+
+```{r}
+ggsave("HGVSp/barplot_HGVSpType_vep.png", barplot_ClinVar_HGVSp, bg='transparent', width = unit(5.5, "cm"), height = unit(4, "cm"))
+```
+
+
+
+
+

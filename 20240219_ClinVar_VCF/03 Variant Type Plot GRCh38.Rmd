@@ -1,0 +1,211 @@
+```{r}
+library(tidyverse)
+```
+
+---
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh38_BLB_Tx1.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh38_PLP_Tx1.RData")
+```
+
+---
+
+```{r}
+PieDF_GRCh38_PLP <- df_clinvar_GRCh38_PLP_Tx1 %>%
+  mutate(
+    Type = case_when(
+      Type == "single nucleotide variant" ~ "SNV",
+      TRUE ~ Type
+    )
+  ) %>%
+  select(key, Type)
+```
+
+```{r}
+PieDF_GRCh38_PLP %>%
+  group_by(Type) %>%
+  count() %>%
+  mutate(Percent = round(n/nrow(PieDF_GRCh38_PLP), 2))
+```
+
+# 看一下Microsatellite是什麼鬼
+```{r}
+df_clinvar_GRCh38_BLB_Tx1 %>%
+  filter(Type == "Microsatellite")
+```
+
+```{r}
+df_clinvar_GRCh38_PLP_Tx1 %>%
+  filter(Type == "Microsatellite")
+```
+
+
+```{r}
+PieDF_GRCh38_PLP %>%
+  group_by(Type) %>%
+  count() %>%
+  ggplot(aes(x="", y = n, fill = Type)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void()
+```
+
+```{r fig.width=7}
+ggPie_GRCh38_PLP <- PieDF_GRCh38_PLP %>%
+  group_by(Type) %>%
+  count() %>%
+  ggplot(aes(x = Type, y = n)) +
+  # geom_bar(stat = "identity", fill = "#619CFF") +
+  geom_bar(stat = "identity") +
+  geom_text(
+    aes(label = n),
+    vjust = c(1.6, 1.6, -1, -1, -1, -1, 1.6),
+    color = c("white", "white", "black", "black", "black", "black", "white"),
+    # position = position_dodge(0.9),
+    size = 7
+  ) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 15, face = "bold"),
+    axis.text.x = element_text(size = 10, face = "bold"),
+    panel.grid.major = element_blank(), #remove major gridlines
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+    legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) + xlab("") + ylab("")
+```
+
+```{r}
+ggsave("ClinVar_GRCh38_PLP_VaitantType.png", ggPie_GRCh38_PLP, bg='transparent', width = 7, height = 5)
+```
+
+---
+
+```{r}
+PieDF_GRCh38_BLB <- df_clinvar_GRCh38_BLB_Tx1 %>%
+  mutate(
+    Type = case_when(
+      Type == "single nucleotide variant" ~ "SNV",
+      TRUE ~ Type
+    )
+  ) %>%
+  select(key, Type)
+```
+
+```{r}
+PieDF_GRCh38_BLB %>%
+  group_by(Type) %>%
+  count() %>%
+  mutate(Percent = round(n/nrow(PieDF_GRCh38_BLB), 2))
+```
+
+```{r}
+PieDF_GRCh38_BLB %>%
+  group_by(Type) %>%
+  count() %>%
+  ggplot(aes(x="", y = n, fill = Type)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() 
+```
+
+```{r fig.width=7, fig.height=4}
+ggPie_GRCh38_BLB <- PieDF_GRCh38_BLB %>%
+  group_by(Type) %>%
+  count() %>%
+  ggplot(aes(x = Type, y = n)) +
+  geom_bar(stat = "identity") +
+  geom_text(
+    aes(label = n),
+    vjust = -1,
+    # vjust = c(-1, -1, -1, -1, -1, -1, -1),
+    # hjust = c(NA, NA, NA, NA, NA, NA, 1.5),
+    color = c("black", "black", "black", "black", "black", "black", "black"),
+    # position = position_dodge(0.9),
+    size = 7
+  ) +
+  theme(
+    # plot.margin = margin(t = 1, unit = "in"),
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 15, face = "bold"),
+    axis.text.x = element_text(size = 10, face = "bold"),
+    panel.grid.major = element_blank(), #remove major gridlines
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+    legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) + xlab("") + ylab("") +
+  scale_y_continuous(limits = c(NA, 125000))
+```
+
+```{r}
+ggsave("ClinVar_GRCh38_BLB_VaitantType.png", ggPie_GRCh38_BLB, bg='transparent', width = 7, height = 5)
+```
+
+
+
+
+
+---
+
+```{r}
+bind_rows(
+  PieDF_GRCh38_PLP %>% mutate(group = "PLP"),
+  PieDF_GRCh38_BLB %>% mutate(group = "BLB")
+) %>%
+  group_by(Type, group) %>%
+  count() %>%
+  ggplot(aes(x = group, y = n, fill = Type)) +
+  geom_bar(stat="identity", width=1, color="white")
+ 
+```
+ 很醜 算了
+
+
+
+
+
+
+
+---
+
+old
+
+```{r}
+PieDF_GRCh38_PLP <- df_clinvar_GRCh38_PLP_Tx1 %>%
+  mutate(
+    VARIANT_CLASS = case_when(
+      (str_length(ref) == 1 & str_length(alt) == 1) ~ "SNV",
+      (str_length(ref) == str_length(alt)) ~ "MNV",
+      (str_length(ref) > str_length(alt)) ~ "Deletion",
+      (str_length(ref) < str_length(alt)) ~ "Insertion",
+      TRUE ~ "InDel"
+    )
+  ) %>%
+  select(key, VARIANT_CLASS)
+```
+
+```{r}
+PieDF_GRCh38_BLB <- df_clinvar_GRCh38_BLB_Tx1 %>%
+  mutate(
+    VARIANT_CLASS = case_when(
+      (str_length(ref) == 1 & str_length(alt) == 1) ~ "SNV",
+      (str_length(ref) == str_length(alt)) ~ "MNV",
+      (str_length(ref) > str_length(alt)) ~ "Deletion",
+      (str_length(ref) < str_length(alt)) ~ "Insertion",
+      TRUE ~ "InDel"
+    )
+  ) %>%
+  select(key, VARIANT_CLASS)
+```
+
+---
+
+
+

@@ -1,0 +1,353 @@
+```{r}
+library(tidyverse)
+```
+
+# 先讀variant_function
+
+```{bash}
+head GRCh37_PLP/ClinVar_GRCh37_PLP.ensGene.variant_function
+```
+
+```{r}
+tsv_all_variant <- read_tsv(
+  "GRCh37_PLP/ClinVar_GRCh37_PLP.ensGene.variant_function",
+  col_names = c("Func_ensGene", "Gene_ensGene", "no_chr", "no_start", "no_end", "no_ref", "no_alt", "chr", "start", "id", "ref", "alt", "QUAL", "FILTER", "key", "INFO", "FORMAT") 
+) %>%
+  select(key, chr, start, ref, alt, Func_ensGene, Gene_ensGene)
+
+# 71,714
+# 此文件是用不同Func_ensGene(類consequence)分行，並非transcript分行
+```
+
+## 查看
+
+```{r}
+tsv_all_variant %>%
+  group_by(chr, start, ref, alt) %>%
+  filter(n() > 1) %>%
+  # 47,957
+  summarise(across(Func_ensGene, ~ paste(.x, collapse = ",")), .groups = "drop") %>%
+  group_by(Func_ensGene) %>%
+  count() %>%
+  arrange(-n)
+```
+
+```{r}
+tsv_all_variant %>%
+  group_by(Func_ensGene) %>%
+  count() %>%
+  arrange(-n)
+```
+
+```{r}
+tsv_all_variant_sepTx <- tsv_all_variant %>%
+  mutate(Gene_ensGene = str_replace_all(Gene_ensGene, '([^\\)\\d]),', '\\1&')) %>%
+  separate_rows(Gene_ensGene, sep = ",")
+  
+# 268,826
+```
+
+```{r}
+tsv_all_variant_sepTx %>%
+  group_by(Func_ensGene) %>%
+  count() %>%
+  arrange(-n)
+```
+
+```{r}
+unique(tsv_all_variant_sepTx$chr)
+```
+
+
+
+---
+
+# UTR的Gene_ensGene會有HGVSc
+# splicing的HGVSc有點微妙...
+# stream 會有距離，但也會沒給
+# ncRNA會給NR (ClinVar也有NR但很少)，但也就只有NR沒HGVS
+# intronic什麼都沒有
+# exonic靠另一個文件
+```{r}
+unique(tsv_all_variant$Func_ensGene)
+```
+ [1] "exonic"         "downstream"     "upstream"       "splicing"       "intronic"       "ncRNA_intronic"
+ [7] "UTR5"           "UTR3"           "ncRNA_exonic"   "ncRNA_splicing" 
+
+
+# 分出intergenic
+```{r}
+tsv_all_variant_intergenic <- tsv_all_variant_sepTx %>%
+  filter(Func_ensGene == "intergenic") %>%
+  rename(Consequence = Func_ensGene) %>%
+  mutate(ENST = str_extract(Gene_ensGene, 'ENST\\d+')) %>%
+  mutate(HGVSc = str_extract(Gene_ensGene, 'dist=\\d+')) %>%
+  select(key, chr, start, ref, alt, ENST, Consequence, HGVSc)
+
+# 0
+```
+
+# 分出UTR
+```{r}
+tsv_all_variant_utr <- tsv_all_variant_sepTx %>%
+  filter(Func_ensGene %in% c("UTR5", "UTR3")) %>%
+  rename(Consequence = Func_ensGene) %>%
+  mutate(ENST = str_extract(Gene_ensGene, 'ENST\\d+')) %>%
+  mutate(HGVSc = str_extract(Gene_ensGene, 'c\\.[^\\)]*')) %>%
+  select(key, chr, start, ref, alt, ENST, Consequence, HGVSc)
+
+# 2,764
+```
+
+# 分出Splice, ncRNA_splicing
+```{r}
+tsv_all_variant_sp <- tsv_all_variant_sepTx %>%
+  filter(Func_ensGene %in% c("splicing", "ncRNA_splicing")) %>%
+  rename(Consequence = Func_ensGene) %>%
+  mutate(ENST = str_extract(Gene_ensGene, 'ENST\\d+')) %>%
+  mutate(HGVSc = str_extract(Gene_ensGene, 'c\\.[^\\)&]*')) %>%
+  select(key, chr, start, ref, alt, ENST, Consequence, HGVSc)
+
+# 31,458
+```
+
+這些splice沒有HGVSc
+```{r}
+tsv_all_variant_sp %>%
+  filter(is.na(HGVSc))
+
+# 2,468
+```
+
+# 分出上下游stream
+```{r}
+tsv_all_variant_stream <- tsv_all_variant_sepTx %>%
+  filter(Func_ensGene %in% c("upstream", "downstream")) %>%
+  rename(Consequence = Func_ensGene) %>%
+  mutate(ENST = str_extract(Gene_ensGene, 'ENST\\d+')) %>%
+  mutate(HGVSc = str_extract(Gene_ensGene, 'dist=\\d+')) %>%
+  mutate(HGVSc = if_else(is.na(HGVSc), ".", HGVSc)) %>%
+  select(key, chr, start, ref, alt, ENST, Consequence, HGVSc)
+
+# 28,423
+```
+
+```{r}
+tsv_all_variant_stream %>%
+  filter(HGVSc == ".")
+
+# 16,741
+# 這些stream的HGVSc沒有dist
+```
+
+# 分出intronic, ncRNA
+
+```{r}
+tsv_all_variant_innc <- tsv_all_variant_sepTx %>%
+  filter(Func_ensGene %in% c("intronic", "ncRNA_intronic", "ncRNA_exonic")) %>%
+  rename(Consequence = Func_ensGene) %>%
+  rename(ENST = Gene_ensGene) %>%
+  select(key, chr, start, ref, alt, ENST, Consequence)
+
+# 51,224
+```
+
+
+# 分出exonic
+```{r}
+tsv_all_variant_exonic <- tsv_all_variant_sepTx %>%
+  filter(Func_ensGene == "exonic")
+
+# 154,957
+```
+
+---
+
+```{r}
+nrow(tsv_all_variant_sepTx) == nrow(tsv_all_variant_intergenic) + nrow(tsv_all_variant_utr) + nrow(tsv_all_variant_sp) + nrow(tsv_all_variant_stream) + nrow(tsv_all_variant_innc) + nrow(tsv_all_variant_exonic)
+```
+
+```{r}
+rm(tsv_all_variant, tsv_all_variant_sepTx)
+```
+
+---
+
+# 再讀exon的variant
+
+```{bash}
+head GRCh37_PLP/ClinVar_GRCh37_PLP.ensGene.exonic_variant_function
+```
+
+```{r}
+tsv_exon_variant <- read_tsv(
+  "GRCh37_PLP/ClinVar_GRCh37_PLP.ensGene.exonic_variant_function",
+  col_names = c("line", "ExonicFunc_ensGene", "AAChange_ensGene", "no_chr", "no_start", "no_end", "no_ref", "no_alt", "chr", "start", "id", "ref", "alt", "QUAL", "FILTER", "key", "INFO", "FORMAT")
+) %>%
+  select(key, chr, start, ref, alt, ExonicFunc_ensGene, AAChange_ensGene)
+
+# 37,618
+```
+
+```{r}
+tsv_exon_variant %>%
+  group_by(ExonicFunc_ensGene) %>%
+  count() %>%
+  arrange(-n)
+```
+
+```{r}
+tsv_exon_variant_sepTX <- tsv_exon_variant %>%
+  separate_rows(AAChange_ensGene, sep = ",") %>%
+  filter(AAChange_ensGene != "")
+
+# 154,888
+```
+
+```{r}
+tsv_exon_variant_sepTX %>%
+  group_by(ExonicFunc_ensGene) %>%
+  count() %>%
+  arrange(-n)
+
+# 299 AAChange_ensGene = UNKNOWN
+# 沒有Gene_ensGene對應不回去所以丟掉
+```
+
+```{r}
+tsv_exon_variant_sepTX %>%
+  filter(ExonicFunc_ensGene == "unknown")
+```
+
+```{r}
+tsv_exon_variant_sepTXsepHGVS <- tsv_exon_variant_sepTX %>%
+  filter(ExonicFunc_ensGene != "unknown") %>%
+  separate(AAChange_ensGene, sep = ":", into = c("Symbol", "Gene_ensGene", "exon_NO", "HGVSc", "HGVSp"))
+
+# 154,589
+```
+
+```{r}
+rm(tsv_exon_variant, tsv_exon_variant_sepTX)
+```
+
+---
+
+# exon join回一起
+
+```{r}
+Joint_all_variant_exonic <- tsv_all_variant_exonic %>%
+  left_join(
+    tsv_exon_variant_sepTXsepHGVS,
+    by = c("key", "chr", "start", "ref", "alt", "Gene_ensGene")
+  )
+
+# 154,957
+```
+
+```{r}
+Joint_all_variant_exonic %>%
+  group_by(Func_ensGene, ExonicFunc_ensGene) %>%
+  count() %>%
+  arrange(Func_ensGene, -n)
+```
+
+# NA的補成UNKNOWN
+```{r}
+Joint_all_variant_exonic_unknow <- Joint_all_variant_exonic %>%
+  rename(ENST = Gene_ensGene) %>%
+  mutate(
+    ExonicFunc_ensGene = if_else(is.na(ExonicFunc_ensGene), "unknown", ExonicFunc_ensGene),
+    HGVSc = if_else(is.na(HGVSc), "UNKNOWN", HGVSc)
+  ) %>%
+  rename(Consequence = ExonicFunc_ensGene) %>%
+  select(key, chr, start, ref, alt, ENST, Consequence, HGVSc, Symbol, HGVSp)
+
+# 154,957
+```
+
+```{r}
+rm(tsv_all_variant_exonic, Joint_all_variant_exonic, tsv_exon_variant_sepTXsepHGVS)
+```
+
+---
+
+# 合併
+
+```{r}
+df_ClinVar_GRCh37_PLP_annovar_ensembl <- bind_rows(
+  Joint_all_variant_exonic_unknow,
+  tsv_all_variant_intergenic,
+  tsv_all_variant_innc,
+  tsv_all_variant_sp,
+  tsv_all_variant_stream,
+  tsv_all_variant_utr
+) %>%
+  arrange(match(chr, c(1:22, "X", "Y", "MT")), start, ref, alt, ENST)
+
+# 268,826
+```
+
+```{r}
+df_ClinVar_GRCh37_PLP_annovar_ensembl %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(Consequence) %>%
+  arrange(-n)
+```
+
+```{r}
+rm(
+  Joint_all_variant_exonic_unknow,
+  tsv_all_variant_intergenic,
+  tsv_all_variant_innc,
+  tsv_all_variant_sp,
+  tsv_all_variant_stream,
+  tsv_all_variant_utr
+)
+```
+
+```{r}
+df_ClinVar_GRCh37_PLP_annovar_ensembl[df_ClinVar_GRCh37_PLP_annovar_ensembl == ""] = "."
+df_ClinVar_GRCh37_PLP_annovar_ensembl[is.na(df_ClinVar_GRCh37_PLP_annovar_ensembl)] = "."
+```
+
+看一下ENST怪怪的....
+```{r}
+df_ClinVar_GRCh37_PLP_annovar_ensembl %>%
+  filter(str_detect(ENST, '\\('))
+
+# 0
+```
+
+```{r}
+df_ClinVar_GRCh37_PLP_annovar_ensembl <- df_ClinVar_GRCh37_PLP_annovar_ensembl %>%
+  mutate(ENST = str_extract(ENST, 'ENS\\w\\d+')) %>%
+  mutate(key = str_remove(key, 'TAG='))
+```
+
+```{r}
+df_ClinVar_GRCh37_PLP_annovar_ensembl %>%
+  filter(is.na(ENST))
+
+# 0
+# 應該都是Nx的Tx存進去
+```
+
+```{r}
+df_ClinVar_GRCh37_PLP_annovar_ensembl %>%
+  filter(!str_detect(ENST, '^ENS'))
+
+# 0
+# 應該都是Nx的Tx存進去
+```
+
+
+```{r}
+save(df_ClinVar_GRCh37_PLP_annovar_ensembl, file = "GRCh37_PLP/df_ClinVar_GRCh37_PLP_annovar_ensembl.RData")
+```
+
+
+
+
+

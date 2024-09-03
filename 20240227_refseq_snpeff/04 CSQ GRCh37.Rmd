@@ -1,0 +1,250 @@
+```{r}
+library(tidyverse)
+```
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240227_refseq_snpeff/GRCh37_BLB/df_ClinVar_GRCh37_BLB_snpeff_refseq.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240227_refseq_snpeff/GRCh37_PLP/df_ClinVar_GRCh37_PLP_snpeff_refseq.RData")
+```
+
+---
+
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_snpeff_refseq,
+  df_ClinVar_GRCh37_PLP_snpeff_refseq
+) %>%
+  select(Annotation) %>%
+  separate_rows(Annotation, sep = "&") %>%
+  group_by(Annotation) %>%
+  count() %>%
+  arrange(Annotation)
+
+```
+
+---
+
+# 查一下initiator_codon_variant的HGVSp
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_snpeff_refseq,
+  df_ClinVar_GRCh37_PLP_snpeff_refseq
+) %>%
+  select(key, NM, Annotation, HGVSp) %>%
+  filter(str_detect(Annotation, "initiator_codon_variant"))
+
+# 這個set沒有
+```
+
+# 查一下splice_region_variant的HGVSp
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_snpeff_refseq,
+  df_ClinVar_GRCh37_PLP_snpeff_refseq
+) %>%
+  select(key, NM, Annotation, HGVSp) %>%
+  filter(str_detect(Annotation, "splice_region_variant"))
+
+```
+跟synonymous_variant, missense_variant一起就有
+跟intron_variant一起就沒有
+
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_snpeff_refseq,
+  df_ClinVar_GRCh37_PLP_snpeff_refseq
+) %>%
+  select(key, NM, Annotation, HGVSp) %>%
+  filter(Annotation == "splice_region_variant")
+
+```
+Annotation單獨是splice_region_variant的全都沒HGVSp
+
+# 查一下stop_retained_variant的HGVSp
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_snpeff_refseq,
+  df_ClinVar_GRCh37_PLP_snpeff_refseq
+) %>%
+  select(key, NM, Annotation, HGVSp) %>%
+  filter(str_detect(Annotation, "stop_retained_variant"))
+
+```
+單獨存在，大多有HGVSp，等同synonymous_variant
+但也會有HGVSp是空的
+
+
+---
+
+# 看一下重複CSQ
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_snpeff_refseq,
+  df_ClinVar_GRCh37_PLP_snpeff_refseq
+) %>%
+  select(key, NM, Annotation) %>%
+  group_by(key, NM) %>%
+  filter(n() > 1) %>%
+  arrange(key, NM, Annotation)
+```
+
+# non_coding_transcript_variant好像都是獨立一個row
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_snpeff_refseq,
+  df_ClinVar_GRCh37_PLP_snpeff_refseq
+) %>%
+  select(key, NM, Annotation) %>%
+  filter(str_detect(Annotation, 'non_coding_transcript_variant'))
+
+# 確實是
+```
+
+# 去重複後計算 單Variant CSQ
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_snpeff_refseq,
+  df_ClinVar_GRCh37_PLP_snpeff_refseq
+) %>%
+  select(key, NM, Annotation) %>%
+  separate_rows(Annotation, sep = "&") %>%
+  # 766,488
+  distinct() %>%
+  # 766,475
+  group_by(key, NM) %>%
+  arrange(Annotation, .by_group = T) %>%
+  summarise(across(Annotation, ~ paste(.x, collapse = ",")), .groups = "drop") %>%
+  group_by(Annotation) %>%
+  count() %>%
+  arrange(-n)
+
+```
+
+---
+
+# Concordance
+
+```{r}
+CSQ_ClinVar_GRCh37_BLB_snpeff_refseq <- df_ClinVar_GRCh37_BLB_snpeff_refseq %>%
+  select(key, NM, Annotation) %>%
+  separate_rows(Annotation, sep = "&") %>%
+  distinct() %>%
+  group_by(key, NM) %>%
+  summarise(across(Annotation, ~ paste(.x, collapse = ",")), .groups = "drop") %>%
+  mutate(
+    Consequence = case_when(
+
+      str_detect(Annotation, "splice_acceptor_variant") ~ "splicing_variant",
+      str_detect(Annotation, "splice_donor_variant") ~ "splicing_variant",
+      
+      str_detect(Annotation, "stop_gained") ~ "nonsense",
+      
+      str_detect(Annotation, "frameshift_variant") ~ "frameshift_variant",
+      
+      str_detect(Annotation, "stop_lost") ~ "stop_lost",
+      str_detect(Annotation, "start_lost") ~ "initiatior_codon_variant",
+      # str_detect(Annotation, "initiator_codon_variant") ~ "initiatior_codon_variant",
+      
+      str_detect(Annotation, "disruptive_inframe_deletion") ~ "inframe_variant",
+      str_detect(Annotation, "disruptive_inframe_insertion") ~ "inframe_variant",
+      str_detect(Annotation, "conservative_inframe_deletion") ~ "inframe_variant",
+      str_detect(Annotation, "conservative_inframe_insertion") ~ "inframe_variant",
+      
+      str_detect(Annotation, "missense_variant") ~ "missense_variant",
+      
+      str_detect(Annotation, "synonymous_variant") ~ "synonymous_variant",
+      str_detect(Annotation, "stop_retained_variant") ~ "synonymous_variant",
+
+      str_detect(Annotation, "5_prime_UTR_variant") ~ "5_prime_UTR_variant",
+      str_detect(Annotation, "3_prime_UTR_variant") ~ "3_prime_UTR_variant",
+      str_detect(Annotation, "5_prime_UTR_premature_start_codon_gain_variant") ~ "5_prime_UTR_variant",
+      
+      str_detect(Annotation, "non_coding_transcript_exon_variant") ~ "non_coding_transcript_variant",
+      str_detect(Annotation, "non_coding_transcript_variant") ~ "non_coding_transcript_variant",
+      
+      str_detect(Annotation, "intron_variant") ~ "intron_variant",
+      str_detect(Annotation, "splice_region_variant") ~ "intron_variant",
+      
+      str_detect(Annotation, "upstream_gene_variant") ~ "genic_upstream_transcript_variant",
+      str_detect(Annotation, "downstream_gene_variant") ~ "genic_downstream_transcript_variant",
+      
+      TRUE ~ Annotation
+    )
+  ) %>%
+  select(key, NM, Consequence)
+```
+
+```{r}
+save(CSQ_ClinVar_GRCh37_BLB_snpeff_refseq, file = "CSQ_concordance/CSQ_ClinVar_GRCh37_BLB_snpeff_refseq.RData")
+```
+
+
+```{r}
+CSQ_ClinVar_GRCh37_PLP_snpeff_refseq <- df_ClinVar_GRCh37_PLP_snpeff_refseq %>%
+  select(key, NM, Annotation) %>%
+  separate_rows(Annotation, sep = "&") %>%
+  distinct() %>%
+  group_by(key, NM) %>%
+  summarise(across(Annotation, ~ paste(.x, collapse = ",")), .groups = "drop") %>%
+  mutate(
+    Consequence = case_when(
+
+      str_detect(Annotation, "splice_acceptor_variant") ~ "splicing_variant",
+      str_detect(Annotation, "splice_donor_variant") ~ "splicing_variant",
+      
+      str_detect(Annotation, "stop_gained") ~ "nonsense",
+      
+      str_detect(Annotation, "frameshift_variant") ~ "frameshift_variant",
+      
+      str_detect(Annotation, "stop_lost") ~ "stop_lost",
+      str_detect(Annotation, "start_lost") ~ "initiatior_codon_variant",
+      # str_detect(Annotation, "initiator_codon_variant") ~ "initiatior_codon_variant",
+      
+      str_detect(Annotation, "disruptive_inframe_deletion") ~ "inframe_variant",
+      str_detect(Annotation, "disruptive_inframe_insertion") ~ "inframe_variant",
+      str_detect(Annotation, "conservative_inframe_deletion") ~ "inframe_variant",
+      str_detect(Annotation, "conservative_inframe_insertion") ~ "inframe_variant",
+      
+      str_detect(Annotation, "missense_variant") ~ "missense_variant",
+      
+      str_detect(Annotation, "synonymous_variant") ~ "synonymous_variant",
+      str_detect(Annotation, "stop_retained_variant") ~ "synonymous_variant",
+
+      str_detect(Annotation, "5_prime_UTR_variant") ~ "5_prime_UTR_variant",
+      str_detect(Annotation, "3_prime_UTR_variant") ~ "3_prime_UTR_variant",
+      str_detect(Annotation, "5_prime_UTR_premature_start_codon_gain_variant") ~ "5_prime_UTR_variant",
+      
+      str_detect(Annotation, "non_coding_transcript_exon_variant") ~ "non_coding_transcript_variant",
+      str_detect(Annotation, "non_coding_transcript_variant") ~ "non_coding_transcript_variant",
+      
+      str_detect(Annotation, "intron_variant") ~ "intron_variant",
+      str_detect(Annotation, "splice_region_variant") ~ "intron_variant",
+      
+      str_detect(Annotation, "upstream_gene_variant") ~ "genic_upstream_transcript_variant",
+      str_detect(Annotation, "downstream_gene_variant") ~ "genic_downstream_transcript_variant",
+      
+      TRUE ~ Annotation
+    )
+  ) %>%
+  select(key, NM, Consequence)
+```
+
+```{r}
+save(CSQ_ClinVar_GRCh37_PLP_snpeff_refseq, file = "CSQ_concordance/CSQ_ClinVar_GRCh37_PLP_snpeff_refseq.RData")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,157 @@
+```{r}
+library(tidyverse)
+```
+
+---
+
+# 先確定大家HGVSc都是c開頭
+```{r}
+df_clinvar_GRCh37_BLB_Tx1 %>%
+  select(key, NM, Type, HGVSc, HGVSp, Consequence) %>%
+  filter(!str_detect(HGVSc, '^c') | is.na(HGVSc))
+
+df_clinvar_GRCh37_PLP_Tx1 %>%
+  select(key, NM, Type, HGVSc, HGVSp, Consequence) %>%
+  filter(!str_detect(HGVSc, '^c') | is.na(HGVSc))
+
+df_clinvar_GRCh38_BLB_Tx1 %>%
+  select(key, NM, Type, HGVSc, HGVSp, Consequence) %>%
+  filter(!str_detect(HGVSc, '^c') | is.na(HGVSc))
+
+df_clinvar_GRCh38_PLP_Tx1 %>%
+  select(key, NM, Type, HGVSc, HGVSp, Consequence) %>%
+  filter(!str_detect(HGVSc, '^c') | is.na(HGVSc))
+
+# 有一些NR, NC沒HGVS而已, 但有CSQ
+```
+
+---
+
+# 列出所有要修正的HGVSc
+
+```{r}
+df_clinvar_GRCh37_BLB_Tx1 %>%
+  select(key, Type, HGVSc) %>%
+  filter(
+    str_detect(HGVSc, 'del[ATCG]+') |
+    str_detect(HGVSc, 'delins[ATCG]+') |
+    str_detect(HGVSc, 'dup[ATCG]+') |
+    str_detect(HGVSc, 'ins[ATCG]+') |
+    str_detect(HGVSc, 'inv[ATCG]+')
+  )
+
+# 371
+```
+
+```{r}
+df_clinvar_GRCh37_PLP_Tx1 %>%
+  select(key, Type, HGVSc) %>%
+  filter(
+    str_detect(HGVSc, 'del[ATCG]+') |
+    str_detect(HGVSc, 'delins[ATCG]+') |
+    str_detect(HGVSc, 'dup[ATCG]+') |
+    str_detect(HGVSc, 'ins[ATCG]+') |
+    str_detect(HGVSc, 'inv[ATCG]+')
+  )
+
+# 611
+```
+
+```{r}
+df_clinvar_GRCh38_BLB_Tx1 %>%
+  select(key, Type, HGVSc) %>%
+  filter(
+    str_detect(HGVSc, 'del[ATCG]+') |
+    str_detect(HGVSc, 'delins[ATCG]+') |
+    str_detect(HGVSc, 'dup[ATCG]+') |
+    str_detect(HGVSc, 'ins[ATCG]+') |
+    str_detect(HGVSc, 'inv[ATCG]+')
+  )
+
+# 371
+```
+
+```{r}
+df_clinvar_GRCh38_PLP_Tx1 %>%
+  select(key, Type, HGVSc) %>%
+  filter(
+    str_detect(HGVSc, 'del[ATCG]+') |
+    str_detect(HGVSc, 'delins[ATCG]+') |
+    str_detect(HGVSc, 'dup[ATCG]+') |
+    str_detect(HGVSc, 'ins[ATCG]+') |
+    str_detect(HGVSc, 'inv[ATCG]+')
+  )
+
+# 611
+```
+
+---
+
+# 開始改變
+
+```{r}
+df_clinvar_GRCh37_BLB_Tx1 <- df_clinvar_GRCh37_BLB_Tx1 %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'del[ATCG]+'), str_replace(HGVSc, '(.*del)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'delins[ATCG]+'), str_replace(HGVSc, '(.*delins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'dup[ATCG]+'), str_replace(HGVSc, '(.*dup)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'ins[ATCG]+'), str_replace(HGVSc, '(.*ins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'inv[ATCG]+'), str_replace(HGVSc, '(.*inv)[ATCG]+', '\\1'), HGVSc))
+```
+
+```{r}
+df_clinvar_GRCh37_PLP_Tx1 <- df_clinvar_GRCh37_PLP_Tx1 %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'del[ATCG]+'), str_replace(HGVSc, '(.*del)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'delins[ATCG]+'), str_replace(HGVSc, '(.*delins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'dup[ATCG]+'), str_replace(HGVSc, '(.*dup)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'ins[ATCG]+'), str_replace(HGVSc, '(.*ins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'inv[ATCG]+'), str_replace(HGVSc, '(.*inv)[ATCG]+', '\\1'), HGVSc))
+```
+
+```{r}
+df_clinvar_GRCh38_BLB_Tx1 <- df_clinvar_GRCh38_BLB_Tx1 %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'del[ATCG]+'), str_replace(HGVSc, '(.*del)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'delins[ATCG]+'), str_replace(HGVSc, '(.*delins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'dup[ATCG]+'), str_replace(HGVSc, '(.*dup)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'ins[ATCG]+'), str_replace(HGVSc, '(.*ins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'inv[ATCG]+'), str_replace(HGVSc, '(.*inv)[ATCG]+', '\\1'), HGVSc))
+```
+
+```{r}
+df_clinvar_GRCh38_PLP_Tx1 <- df_clinvar_GRCh38_PLP_Tx1 %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'del[ATCG]+'), str_replace(HGVSc, '(.*del)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'delins[ATCG]+'), str_replace(HGVSc, '(.*delins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'dup[ATCG]+'), str_replace(HGVSc, '(.*dup)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'ins[ATCG]+'), str_replace(HGVSc, '(.*ins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'inv[ATCG]+'), str_replace(HGVSc, '(.*inv)[ATCG]+', '\\1'), HGVSc))
+```
+
+---
+
+```{r}
+save(df_clinvar_GRCh37_BLB_Tx1, file = "df_clinvar_GRCh37_BLB_Tx1.RData")
+save(df_clinvar_GRCh37_PLP_Tx1, file = "df_clinvar_GRCh37_PLP_Tx1.RData")
+save(df_clinvar_GRCh38_BLB_Tx1, file = "df_clinvar_GRCh38_BLB_Tx1.RData")
+save(df_clinvar_GRCh38_PLP_Tx1, file = "df_clinvar_GRCh38_PLP_Tx1.RData")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

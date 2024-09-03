@@ -1,0 +1,137 @@
+```{r}
+library(tidyverse)
+```
+
+---
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh38_BLB_Tx1.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh38_PLP_Tx1.RData")
+```
+
+---
+
+```{r}
+df_clinvar_GRCh38_2star <- bind_rows(
+  df_clinvar_GRCh38_PLP_Tx1,
+  df_clinvar_GRCh38_BLB_Tx1
+) %>%
+  mutate(
+    VARIANT_CLASS = case_when(
+      (str_length(ref) == 1 & str_length(alt) == 1) ~ "SNV",
+      (str_length(ref) == str_length(alt)) ~ "MNV",
+      # (str_length(ref) > str_length(alt)) ~ "Deletion",
+      # (str_length(ref) < str_length(alt)) ~ "Insertion",
+      TRUE ~ "InDel"
+    )
+  ) %>%
+  select(key, VARIANT_CLASS)
+```
+
+```{r}
+df_clinvar_GRCh38_2star %>%
+  group_by(VARIANT_CLASS) %>%
+  count() %>%
+  mutate(Percent = round(n/nrow(df_clinvar_GRCh38_2star), 2))
+```
+
+```{r fig.width=7, fig.height=4}
+ggSelectionSize <- tibble(
+  DataSet = c("Selection", "Raw"),
+  Variants = c(log10(164549), log10(2349000))
+) %>%
+  mutate(DataSet = factor(DataSet, levels = c("Raw", "Selection"))) %>%
+  ggplot(aes(x = DataSet, y = Variants)) +
+  geom_bar(stat="identity", fill = "#619CFF") +
+  # ylim("100", "102", "104", "106") +
+  scale_y_continuous(
+    breaks = c(0, 2, 4, 6),
+    labels = c(expression(10^{0}), expression(10^{2}), expression(10^{4}), expression(10^{6}))
+  ) +
+  coord_flip() +
+  geom_text(aes(label = c("164,549", "2,349,000")), color="white", nudge_y = c(-4.5, -5.5), size = 7) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA),
+    axis.text.y = element_text(size = 15, face = "bold"),
+    axis.text.x = element_text(size = 15, face = "bold"),
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+    legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) +
+  xlab("") +
+  ylab("")
+```
+
+```{r}
+ggsave("ggSelectionSize.png", ggSelectionSize, bg='transparent', width = 7, height = 4)
+```
+
+
+---
+
+# number of records:      2349000
+# number of no-ALTs:      990
+# number of SNPs: 2147692
+# number of MNPs: 7847
+# number of indels:       186883
+# number of others:       5588
+
+```{r}
+2147692/2349000
+7847/2349000
+186883/2349000
+
+(990+5588)/2349000
+```
+
+
+number of records:      44351
+number of no-ALTs:      0
+number of SNPs:         29391
+number of MNPs:         130
+number of indels:       14830
+number of others:       0
+
+number of records:      120198
+number of no-ALTs:      0
+number of SNPs:         115269
+number of MNPs:         139
+number of indels:       4790
+number of others:       0
+
+```{r}
+(29391+115269)/164549
+(130+139)/164549
+(14830+4790)/164549
+
+```
+
+```{r fig.width=7, fig.height=4}
+ggSelectionType <- tibble(
+  DataSet = c("Selection", "Selection", "Selection", "Selection", "Raw", "Raw", "Raw", "Raw"),
+  Type = c("SNP", "MNP", "InDel", "Others", "SNP", "MNP", "InDel", "Others"),
+  Number = c(0.8791302, 0.001634771, 0.119235, 0, 0.9143006, 0.00334057, 0.07955854, 0.002800341)
+) %>%
+  mutate(DataSet = factor(DataSet, levels = c("Raw", "Selection"))) %>%
+  ggplot(aes(x = DataSet, y = Number, fill = Type)) +
+  geom_bar(stat="identity") +
+  coord_flip() +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA),
+    axis.text.y = element_text(size = 15, face = "bold"),
+    axis.text.x = element_text(size = 15, face = "bold"),
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+  ) +
+  xlab("") +
+  ylab("")
+```
+
+```{r}
+ggsave("ggSelectionType.png", ggSelectionType, bg='transparent', width = 7, height = 4)
+```
+
+
+
+
+

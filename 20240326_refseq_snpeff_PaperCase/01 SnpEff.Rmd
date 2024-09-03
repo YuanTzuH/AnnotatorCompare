@@ -1,0 +1,124 @@
+# SnpEff 5.2
+## GRCh37.p13
+## GRCh38.mane.1.2.refseq
+
+```{bash}
+# snpeff pod
+
+screen -U -s /bin/bash
+
+INTPU_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240326_refseq_annovar_PaperCase
+OUTPUD_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240326_refseq_snpeff_PaperCase
+
+```
+
+```{bash}
+# snpeff pod
+
+cd /volume/wgsa/snpEff
+
+SnpEff_INPUT_VCF=$INTPU_DIR/hg38_20240326_PaperCase.vcf
+SnpEff_OUTPUT_VCF=$OUTPUD_DIR/PaperCase_GRCh38_refseq_snpeff.vcf
+
+java -Xmx10g -jar snpEff.jar GRCh38.mane.1.2.refseq $SnpEff_INPUT_VCF > $SnpEff_OUTPUT_VCF
+
+```
+
+# 這裡bcftools只能用1.18不能用1.19
+```{bash}
+# bcftools pod
+
+cd /volume/rproj/Paper3Annot_2024/ClinVar20240107/20240326_refseq_snpeff_PaperCase
+
+#
+
+IN_VCF=PaperCase_GRCh38_refseq_snpeff.vcf
+OUT_TSV=PaperCase_GRCh38_refseq_snpeff.query.tsv
+
+bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%TAG\t%ANN\t%LOF\t%NMD\n' $IN_VCF > $OUT_TSV
+
+```
+
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+tsv_ann <- read_tsv(
+  "PaperCase_GRCh38_refseq_snpeff.query.tsv",
+  col_names = c("chr", "start", "ref", "alt", "key", "ANN", "LOF", "NMD")
+)
+
+```
+
+```{r}
+tsv_ann_sep1 <- tsv_ann %>%
+  separate_rows(ANN, sep = ",")
+
+```
+
+```{r}
+tsv_ann_sep2 <- tsv_ann_sep1 %>%
+  separate(
+    ANN,
+    c(
+      "Allele",
+      "Annotation",
+      "Annotation_Impact",
+      "Gene_Name",
+      "Gene_ID",
+      "Feature_Type",
+      "Feature_ID",
+      "Transcript_BioType",
+      "Rank",
+      "HGVSc",
+      "HGVSp",
+      "cDNA",
+      "CDS",
+      "AA",
+      "Distance",
+      "INFO"
+    ),
+    sep = "\\|", remove = T, convert = F
+    )
+
+```
+
+```{r}
+tsv_ann_sep2[tsv_ann_sep2 == ""] = "."
+```
+
+```{r}
+df_PaperCase_GRCh38_refseq_snpeff <- tsv_ann_sep2 %>%
+  select(
+    key, chr, start, ref, alt,
+    Gene_Name, Gene_ID, Annotation, Annotation_Impact,
+    Feature_ID, Feature_Type, Transcript_BioType,
+    Rank, cDNA, CDS, AA, Distance,
+    HGVSc, HGVSp,
+    LOF, NMD
+  ) %>%
+  mutate(NM = str_extract(Feature_ID, '[^\\.]+'))
+```
+
+```{r}
+rm(tsv_ann, tsv_ann_sep1, tsv_ann_sep2)
+```
+
+---
+
+```{r}
+save(df_PaperCase_GRCh38_refseq_snpeff, file = "df_PaperCase_GRCh38_refseq_snpeff.RData")
+```
+
+```{r}
+df_PaperCase_GRCh38_refseq_snpeff %>%
+  select(-key, -NM) %>%
+  write_tsv("df_PaperCase_GRCh38_refseq_snpeff.tsv")
+```
+
+
+
+

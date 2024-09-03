@@ -1,0 +1,104 @@
+```{r}
+library(tidyverse)
+```
+
+```{bash}
+head -n 40 GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.snpeff.vcf
+```
+Allele | Annotation | Annotation_Impact | Gene_Name | Gene_ID | Feature_Type | Feature_ID | Transcript_BioType | Rank | HGVS.c | HGVS.p | cDNA.pos / cDNA.length | CDS.pos / CDS.length | AA.pos / AA.length | Distance | ERRORS / WARNINGS / INFO
+Gene_Name | Gene_ID | Number_of_transcripts_in_gene | Percent_of_transcripts_affected
+Gene_Name | Gene_ID | Number_of_transcripts_in_gene | Percent_of_transcripts_affected
+
+```{bash}
+head GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.query.tsv
+```
+
+```{r}
+tsv_ann <- read_tsv(
+  "GRCh38_PLP/ClinVar_GRCh38_PLP_Tx1_20240107.query.tsv",
+  col_names = c("chr", "start", "ref", "alt", "key", "ANN", "LOF", "NMD")
+)
+
+# 44,351
+```
+
+```{r}
+tsv_ann_sep1 <- tsv_ann %>%
+  separate_rows(ANN, sep = ",")
+
+# 50,928
+```
+
+```{r}
+tsv_ann_sep2 <- tsv_ann_sep1 %>%
+  separate(
+    ANN,
+    c(
+      "Allele",
+      "Annotation",
+      "Annotation_Impact",
+      "Gene_Name",
+      "Gene_ID",
+      "Feature_Type",
+      "Feature_ID",
+      "Transcript_BioType",
+      "Rank",
+      "HGVSc",
+      "HGVSp",
+      "cDNA",
+      "CDS",
+      "AA",
+      "Distance",
+      "INFO"
+    ),
+    sep = "\\|", remove = T, convert = F
+    )
+
+# 50,928
+```
+
+```{r}
+tsv_ann_sep2[tsv_ann_sep2 == ""] = "."
+```
+
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_ensembl <- tsv_ann_sep2 %>%
+  select(
+    key, chr, start, ref, alt,
+    Gene_Name, Gene_ID, Annotation, Annotation_Impact,
+    Feature_ID, Feature_Type, Transcript_BioType,
+    Rank, cDNA, CDS, AA, Distance,
+    HGVSc, HGVSp,
+    LOF, NMD
+  ) %>%
+  separate_rows(Feature_ID, sep = "-") %>%
+  mutate(ENST = str_extract(Feature_ID, '[^\\.]+'))
+```
+
+```{r}
+rm(tsv_ann, tsv_ann_sep1, tsv_ann_sep2)
+```
+
+---
+
+# 濾掉怪Feature_ID
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_ensembl <- df_ClinVar_GRCh38_PLP_snpeff_ensembl %>%
+  filter(str_detect(Feature_ID, '^ENS\\w\\d+')) %>%
+  mutate(ENST = str_extract(Feature_ID, 'ENS\\w\\d+'))
+```
+
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_ensembl %>%
+  mutate(ENST = str_extract(ENST, 'ENS\\w')) %>%
+  select(ENST) %>%
+  group_by(ENST) %>%
+  count()
+```
+
+---
+
+```{r}
+save(df_ClinVar_GRCh38_PLP_snpeff_ensembl, file = "GRCh38_PLP/df_ClinVar_GRCh38_PLP_snpeff_ensembl.RData")
+```
+

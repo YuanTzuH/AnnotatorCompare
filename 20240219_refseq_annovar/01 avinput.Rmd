@@ -1,0 +1,55 @@
+# Annovar avinput
+
+```{bash}
+# annovar pod
+
+screen -U -s /bin/bash
+
+cd /volume/wgsa/annovar
+
+INTPU_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF
+OUTPUD_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar
+
+```
+
+# GRCh37 PLP
+```{bash}
+# 
+perl convert2annovar.pl --includeinfo -format vcf4 $INTPU_DIR/ClinVar_GRCh37_PLP_Tx1_20240107.vcf > $OUTPUD_DIR/GRCh37_PLP/ClinVar_GRCh37_PLP.avinput
+
+```
+NOTICE: Finished reading 44384 lines from VCF file
+NOTICE: A total of 44351 locus in VCF file passed QC threshold, representing 29391 SNPs (19416 transitions and 9975 transversions) and 14960 indels/substitutions
+NOTICE: Finished writing 29391 SNP genotypes (19416 transitions and 9975 transversions) and 14960 indels/substitutions for 1 sample
+
+# GRCh37 BLB
+```{bash}
+# 
+perl convert2annovar.pl --includeinfo -format vcf4 $INTPU_DIR/ClinVar_GRCh37_BLB_Tx1_20240107.vcf > $OUTPUD_DIR/GRCh37_BLB/ClinVar_GRCh37_BLB.avinput
+
+```
+NOTICE: Finished reading 120298 lines from VCF file
+NOTICE: A total of 120265 locus in VCF file passed QC threshold, representing 115337 SNPs (89793 transitions and 25544 transversions) and 4928 indels/substitutions
+NOTICE: Finished writing 115337 SNP genotypes (89793 transitions and 25544 transversions) and 4928 indels/substitutions for 1 sample
+
+```{bash}
+# 
+perl convert2annovar.pl --includeinfo -format vcf4 $INTPU_DIR/ClinVar_GRCh38_PLP_Tx1_20240107.vcf > $OUTPUD_DIR/GRCh38_PLP/ClinVar_GRCh38_PLP.avinput
+
+```
+NOTICE: Finished reading 44384 lines from VCF file
+NOTICE: A total of 44351 locus in VCF file passed QC threshold, representing 29391 SNPs (19416 transitions and 9975 transversions) and 14960 indels/substitutions
+NOTICE: Finished writing 29391 SNP genotypes (19416 transitions and 9975 transversions) and 14960 indels/substitutions for 1 sample
+
+```{bash}
+# 
+perl convert2annovar.pl --includeinfo -format vcf4 $INTPU_DIR/ClinVar_GRCh38_BLB_Tx1_20240107.vcf > $OUTPUD_DIR/GRCh38_BLB/ClinVar_GRCh38_BLB.avinput
+
+```
+NOTICE: Finished reading 120231 lines from VCF file
+NOTICE: A total of 120198 locus in VCF file passed QC threshold, representing 115269 SNPs (89740 transitions and 25529 transversions) and 4929 indels/substitutions
+NOTICE: Finished writing 115269 SNP genotypes (89740 transitions and 25529 transversions) and 4929 indels/substitutions for 1 sample
+
+
+
+

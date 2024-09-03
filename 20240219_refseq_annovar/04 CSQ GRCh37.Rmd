@@ -1,0 +1,213 @@
+```{r}
+library(tidyverse)
+```
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh37_BLB/df_ClinVar_GRCh37_BLB_annovar_refseq.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh37_PLP/df_ClinVar_GRCh37_PLP_annovar_refseq.RData")
+```
+
+---
+
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_annovar_refseq %>%
+    select(Consequence),
+  df_ClinVar_GRCh37_PLP_annovar_refseq %>%
+    select(Consequence),
+) %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(-n)
+
+```
+
+```{r}
+bind_rows(
+  df_ClinVar_GRCh37_BLB_annovar_refseq %>%
+    select(key, NM, Consequence),
+  df_ClinVar_GRCh37_PLP_annovar_refseq %>%
+    select(key, NM, Consequence),
+) %>%
+  group_by(key, NM) %>%
+  arrange(Consequence, .by_group = T) %>%
+  summarise(across(Consequence, ~ paste(.x, collapse = ",")), .groups = "drop") %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(-n)
+```
+
+---
+
+# Concordance
+
+```{r}
+df_ClinVar_GRCh37_BLB_annovar_refseq_CSQ <- df_ClinVar_GRCh37_BLB_annovar_refseq %>%
+  mutate(
+    Consequence = case_when(
+      Consequence == "splicing" ~ "splicing_variant",
+      
+      Consequence == "stopgain" ~ "nonsense",
+      
+      Consequence == "frameshift deletion" ~ "frameshift_variant",
+      Consequence == "frameshift insertion" ~ "frameshift_variant",
+      # Consequence == "frameshift substitution" ~ "frameshift_variant",
+      
+      Consequence == "stoploss" ~ "stop_lost",
+      Consequence == "startloss" ~ "initiatior_codon_variant",
+      
+      Consequence == "nonframeshift deletion" ~ "inframe_variant",
+      Consequence == "nonframeshift insertion" ~ "inframe_variant",
+      
+      Consequence == "nonsynonymous SNV" ~ "missense_variant",
+      Consequence == "nonframeshift substitution" ~ "missense_variant",
+      
+      Consequence == "synonymous SNV" ~ "synonymous_variant",
+      
+      Consequence == "UTR5" ~ "5_prime_UTR_variant",
+      Consequence == "UTR3" ~ "3_prime_UTR_variant",
+      
+      Consequence == "ncRNA_exonic" ~ "non_coding_transcript_variant",
+      Consequence == "ncRNA_intronic" ~ "non_coding_transcript_variant",
+      Consequence == "ncRNA_splicing" ~ "non_coding_transcript_variant",
+      
+      Consequence == "intronic" ~ "intron_variant",
+      
+      Consequence == "upstream" ~ "genic_upstream_transcript_variant",
+      Consequence == "downstream" ~ "genic_downstream_transcript_variant",
+      
+      # Consequence == "intergenic" ~ "intergenic_variant",
+      TRUE ~ Consequence
+    )
+  ) %>%
+  select(key, NM, Consequence) %>%
+  mutate(key = str_remove(key, "TAG="))
+```
+
+```{r}
+df_ClinVar_GRCh37_PLP_annovar_refseq_CSQ <- df_ClinVar_GRCh37_PLP_annovar_refseq %>%
+  mutate(
+    Consequence = case_when(
+      Consequence == "splicing" ~ "splicing_variant",
+      
+      Consequence == "stopgain" ~ "nonsense",
+      
+      Consequence == "frameshift deletion" ~ "frameshift_variant",
+      Consequence == "frameshift insertion" ~ "frameshift_variant",
+      # Consequence == "frameshift substitution" ~ "frameshift_variant",
+      
+      Consequence == "stoploss" ~ "stop_lost",
+      Consequence == "startloss" ~ "initiatior_codon_variant",
+      
+      Consequence == "nonframeshift deletion" ~ "inframe_variant",
+      Consequence == "nonframeshift insertion" ~ "inframe_variant",
+      
+      Consequence == "nonsynonymous SNV" ~ "missense_variant",
+      Consequence == "nonframeshift substitution" ~ "missense_variant",
+      
+      Consequence == "synonymous SNV" ~ "synonymous_variant",
+      
+      Consequence == "UTR5" ~ "5_prime_UTR_variant",
+      Consequence == "UTR3" ~ "3_prime_UTR_variant",
+      
+      Consequence == "ncRNA_exonic" ~ "non_coding_transcript_variant",
+      Consequence == "ncRNA_intronic" ~ "non_coding_transcript_variant",
+      Consequence == "ncRNA_splicing" ~ "non_coding_transcript_variant",
+      
+      Consequence == "intronic" ~ "intron_variant",
+      
+      Consequence == "upstream" ~ "genic_upstream_transcript_variant",
+      Consequence == "downstream" ~ "genic_downstream_transcript_variant",
+      
+      # Consequence == "intergenic" ~ "intergenic_variant",
+      TRUE ~ Consequence
+    )
+  ) %>%
+  select(key, NM, Consequence) %>%
+  mutate(key = str_remove(key, "TAG="))
+```
+
+---
+
+```{r}
+df_ClinVar_GRCh37_BLB_annovar_refseq_CSQ_n1 <- df_ClinVar_GRCh37_BLB_annovar_refseq_CSQ %>%
+  # 467,181
+  distinct() %>%
+  # 467,178
+  group_by(key, NM) %>%
+  filter(n() == 1) %>%
+  ungroup()
+# 466,294
+
+df_ClinVar_GRCh37_BLB_annovar_refseq_CSQ_n2 <- df_ClinVar_GRCh37_BLB_annovar_refseq_CSQ %>%
+  # 467,181
+  distinct() %>%
+  # 467,178
+  group_by(key, NM) %>%
+  filter(n() > 1) %>%
+  # 884
+  filter(Consequence == "splicing_variant") %>%
+  ungroup()
+# 442
+
+CSQ_ClinVar_GRCh37_BLB_annovar_refseq <- bind_rows(
+  df_ClinVar_GRCh37_BLB_annovar_refseq_CSQ_n1,
+  df_ClinVar_GRCh37_BLB_annovar_refseq_CSQ_n2
+) %>%
+  arrange(key, NM)
+# 466,736
+
+```
+
+```{r}
+rm(df_ClinVar_GRCh37_BLB_annovar_refseq_CSQ, df_ClinVar_GRCh37_BLB_annovar_refseq_CSQ_n1, df_ClinVar_GRCh37_BLB_annovar_refseq_CSQ_n2)
+```
+
+
+```{r}
+df_ClinVar_GRCh37_PLP_annovar_refseq_CSQ_n1 <- df_ClinVar_GRCh37_PLP_annovar_refseq_CSQ %>%
+  # 198,038
+  distinct() %>%
+  # 198,003
+  group_by(key, NM) %>%
+  filter(n() == 1) %>%
+  ungroup()
+# 148,489
+
+df_ClinVar_GRCh37_PLP_annovar_refseq_CSQ_n2 <- df_ClinVar_GRCh37_PLP_annovar_refseq_CSQ %>%
+  # 198,038
+  distinct() %>%
+  # 198,003
+  group_by(key, NM) %>%
+  filter(n() > 1) %>%
+  # 49,514
+  filter(Consequence == "splicing_variant") %>%
+  ungroup()
+# 24,757
+
+CSQ_ClinVar_GRCh37_PLP_annovar_refseq <- bind_rows(
+  df_ClinVar_GRCh37_PLP_annovar_refseq_CSQ_n1,
+  df_ClinVar_GRCh37_PLP_annovar_refseq_CSQ_n2
+) %>%
+  arrange(key, NM)
+# 173,246
+
+```
+
+```{r}
+rm(df_ClinVar_GRCh37_PLP_annovar_refseq_CSQ, df_ClinVar_GRCh37_PLP_annovar_refseq_CSQ_n1, df_ClinVar_GRCh37_PLP_annovar_refseq_CSQ_n2)
+```
+
+```{r}
+save(CSQ_ClinVar_GRCh37_BLB_annovar_refseq, file = "CSQ_concordance/CSQ_ClinVar_GRCh37_BLB_annovar_refseq.RData")
+save(CSQ_ClinVar_GRCh37_PLP_annovar_refseq, file = "CSQ_concordance/CSQ_ClinVar_GRCh37_PLP_annovar_refseq.RData")
+```
+
+
+
+
+
+
+
+
+

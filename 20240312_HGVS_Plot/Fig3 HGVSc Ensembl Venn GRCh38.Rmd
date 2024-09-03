@@ -1,0 +1,281 @@
+```{r}
+library(tidyverse)
+library(ggVennDiagram)
+```
+
+---
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ensembl_annovar/GRCh38_PLP/df_ClinVar_GRCh38_PLP_annovar_ensembl.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ensembl_annovar/GRCh38_BLB/df_ClinVar_GRCh38_BLB_annovar_ensembl.RData")
+
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240227_ensembl_snpeff/GRCh38_PLP/df_ClinVar_GRCh38_PLP_snpeff_ensembl.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240227_ensembl_snpeff/GRCh38_BLB/df_ClinVar_GRCh38_BLB_snpeff_ensembl.RData")
+
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240226_ensembl_vep/GRCh38_PLP/df_ClinVar_GRCh38_PLP_vep_ensembl.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240226_ensembl_vep/GRCh38_BLB/df_ClinVar_GRCh38_BLB_vep_ensembl.RData")
+
+```
+
+---
+
+# All Transcript
+
+```{r}
+df_ClinVar_GRCh38_BLB_annovar_ensembl %>%
+  select(key, ENST, HGVSc)
+
+df_ClinVar_GRCh38_BLB_snpeff_ensembl %>%
+  select(key, ENST, HGVSc)
+
+df_ClinVar_GRCh38_BLB_vep_ensembl %>%
+  select(key, Feature, HGVSc) %>%
+  mutate(HGVSc = str_extract(HGVSc, '[a-z]\\..*'))
+  
+```
+
+```{r}
+df_ClinVar_GRCh38_BLB_annovar_ensembl %>%
+  filter(HGVSc == ".") %>%
+  select(Consequence) %>%
+  distinct()
+
+# df_ClinVar_GRCh38_BLB_snpeff_ensembl %>%
+#   filter(HGVSc == ".")
+# 0
+
+# df_ClinVar_GRCh38_PLP_snpeff_ensembl %>%
+#  filter(HGVSc == ".")
+# 0
+
+df_ClinVar_GRCh38_BLB_vep_ensembl %>%
+  filter(HGVSc == ".") %>%
+  # filter(Consequence == "inframe_insertion")
+  select(Consequence) %>%
+  distinct()
+```
+
+---
+
+```{r}
+
+ANNOVAR_allDF <- bind_rows(
+  df_ClinVar_GRCh38_PLP_annovar_ensembl %>% select(key, ENST, HGVSc),
+  df_ClinVar_GRCh38_BLB_annovar_ensembl %>% select(key, ENST, HGVSc)
+) %>%
+  # 934,386
+  filter(HGVSc != ".") %>%
+  # 619,749
+  distinct()
+  # 619,749
+
+SnpEff_allDF <- bind_rows(
+  df_ClinVar_GRCh38_PLP_snpeff_ensembl %>% select(key, ENST, HGVSc),
+  df_ClinVar_GRCh38_BLB_snpeff_ensembl %>% select(key, ENST, HGVSc)
+) %>%
+  # 189,995
+  filter(HGVSc != ".") %>%
+  # 189,995
+  distinct()
+  # 189,836
+
+VEP_allDF <- bind_rows(
+  df_ClinVar_GRCh38_PLP_vep_ensembl %>% select(key, Feature, HGVSc),
+  df_ClinVar_GRCh38_BLB_vep_ensembl %>% select(key, Feature, HGVSc)
+) %>%
+  # 2,150,654
+  filter(HGVSc != ".") %>%
+  # 1,662,993
+  mutate(HGVSc = str_extract(HGVSc, '[a-z]\\..*')) %>%
+  filter(!is.na(HGVSc)) %>%
+  # 1,662,993
+  distinct()
+  # 1,662,993
+
+```
+
+HGVS 修正 del, delins, dup, ins, inv
+
+```{r}
+ANNOVAR_allDF %>%
+  filter(
+    str_detect(HGVSc, 'del[ATCG]+') |
+    str_detect(HGVSc, 'delins[ATCG]+') |
+    str_detect(HGVSc, 'dup[ATCG]+') |
+    str_detect(HGVSc, 'ins[ATCG]+') |
+    str_detect(HGVSc, 'inv[ATCG]+')
+  )
+# 41,709
+
+SnpEff_allDF %>%
+  filter(
+    str_detect(HGVSc, 'del[ATCG]+') |
+    str_detect(HGVSc, 'delins[ATCG]+') |
+    str_detect(HGVSc, 'dup[ATCG]+') |
+    str_detect(HGVSc, 'ins[ATCG]+') |
+    str_detect(HGVSc, 'inv[ATCG]+')
+  )
+# 23,063
+
+VEP_allDF %>%
+  filter(
+    str_detect(HGVSc, 'del[ATCG]+') |
+    str_detect(HGVSc, 'delins[ATCG]+') |
+    str_detect(HGVSc, 'dup[ATCG]+') |
+    str_detect(HGVSc, 'ins[ATCG]+') |
+    str_detect(HGVSc, 'inv[ATCG]+')
+  )
+# 36,692
+```
+
+
+```{r}
+ANNOVAR_allDF <- ANNOVAR_allDF %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'del[ATCG]+'), str_replace(HGVSc, '(.*del)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'delins[ATCG]+'), str_replace(HGVSc, '(.*delins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'dup[ATCG]+'), str_replace(HGVSc, '(.*dup)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'ins[ATCG]+'), str_replace(HGVSc, '(.*ins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'inv[ATCG]+'), str_replace(HGVSc, '(.*inv)[ATCG]+', '\\1'), HGVSc))
+
+SnpEff_allDF <- SnpEff_allDF %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'del[ATCG]+'), str_replace(HGVSc, '(.*del)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'delins[ATCG]+'), str_replace(HGVSc, '(.*delins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'dup[ATCG]+'), str_replace(HGVSc, '(.*dup)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'ins[ATCG]+'), str_replace(HGVSc, '(.*ins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'inv[ATCG]+'), str_replace(HGVSc, '(.*inv)[ATCG]+', '\\1'), HGVSc))
+
+VEP_allDF <- VEP_allDF %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'del[ATCG]+'), str_replace(HGVSc, '(.*del)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'delins[ATCG]+'), str_replace(HGVSc, '(.*delins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'dup[ATCG]+'), str_replace(HGVSc, '(.*dup)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'ins[ATCG]+'), str_replace(HGVSc, '(.*ins)[ATCG]+', '\\1'), HGVSc)) %>%
+  mutate(HGVSc = if_else(str_detect(HGVSc, 'inv[ATCG]+'), str_replace(HGVSc, '(.*inv)[ATCG]+', '\\1'), HGVSc))
+```
+
+---
+
+```{r}
+ANNOVAR <- ANNOVAR_allDF %>% 
+  mutate(ANNOVAR = str_c(key, ":", ENST, ":", HGVSc)) %>%
+  select(ANNOVAR) %>% unlist(use.names = F) %>% sort()
+# 619749
+
+SnpEff <- SnpEff_allDF %>% 
+  mutate(SnpEff = str_c(key, ":", ENST, ":", HGVSc)) %>%
+  select(SnpEff) %>% unlist(use.names = F) %>% sort()
+# 189836
+
+VEP <- VEP_allDF %>%
+  mutate(VEP = str_c(key, ":", Feature, ":", HGVSc)) %>%
+  select(VEP) %>% unlist(use.names = F) %>% sort()
+# 1662993
+
+All <- union(union(ANNOVAR, SnpEff), VEP) %>% sort()
+# 1776409
+
+```
+
+
+```{r}
+Venn_TxVariants_Full <- Venn(list(
+  ANNOVAR = ANNOVAR,
+  SnpEff = SnpEff,
+  VEP = VEP
+))
+
+
+data <- process_data(Venn_TxVariants_Full)
+```
+
+```{r fig.width=5, fig.height=5}
+ggplot() +
+  # 1. region count layer
+  geom_polygon(aes(X, Y, fill = id, group = id), 
+          data = venn_regionedge(data),
+          show.legend = FALSE) +
+  # 2. set edge layer
+  geom_path(aes(X, Y, group = id),
+            color="grey",
+            data = venn_setedge(data),
+            linewidth = 1,
+            show.legend = FALSE) +
+  # 3. set label layer
+  geom_text(aes(X, Y, label = name), 
+            fontface = "bold",
+            data = venn_setlabel(data)) +
+  # 4. region label layer
+  geom_label(aes(X, Y, label = count), 
+             data = venn_regionlabel(data),
+             size = 5,
+             alpha = 0.5) +
+  coord_equal() +
+  theme_void()
+```
+
+```{r}
+91304+1208+20904+398939+128298+39426+1096330
+
+91304/1776409
+1208/1776409
+20904/1776409
+398939/1776409
+128298/1776409
+39426/1776409
+1096330/1776409
+
+```
+
+91304/1776409=0.05139807
+1208/1776409=0.0006800236
+20904/1776409=0.01176756
+398939/1776409=0.2245761
+128298/1776409=0.07222323
+39426/1776409=0.02219421
+1096330/1776409=0.6171608
+
+
+```{r fig.width=5, fig.height=5}
+Venn_TxVariants_Full <- ggplot() +
+  # 1. region count layer
+  geom_polygon(aes(X, Y, fill = id, group = id), 
+          data = venn_regionedge(data),
+          show.legend = FALSE) +
+  # 2. set edge layer
+  geom_path(aes(X, Y, group = id),
+            color="grey",
+            data = venn_setedge(data),
+            linewidth = 1,
+            show.legend = FALSE) +
+  # 3. set label layer
+  geom_text(aes(X, Y, label = name), 
+            fontface = "bold",
+            data = venn_setlabel(data)) +
+  # 4. region label layer
+  geom_label(aes(X, Y, label = count), 
+             data = venn_regionlabel(data),
+             size = 5,
+             alpha = 0.5) +
+  coord_equal() +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
+    panel.grid.major = element_blank() #remove major gridlines
+  ) +
+  theme_void()
+```
+
+```{r}
+ggsave("HGVSc/Venn_HGVSc_allTx_Ensembl.png", Venn_TxVariants_Full, bg='transparent', width = 5, height = 5)
+```
+
+```{r}
+data$regionData %>% 
+  mutate(item = map_chr(item, paste, collapse = ",")) %>%
+  write_tsv(file = "HGVSc/Venn_HGVSc_allTx_Ensembl.tsv")
+```
+
+```{bash}
+head HGVSc/Venn_HGVSc_allTx_Ensembl.tsv
+```
+
+

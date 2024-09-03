@@ -1,0 +1,240 @@
+```{r}
+library(tidyverse)
+```
+
+---
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh37_BLB_Tx1.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh37_PLP_Tx1.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh38_BLB_Tx1.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/df_clinvar_GRCh38_PLP_Tx1.RData")
+```
+
+---
+
+```{r}
+df_clinvar_GRCh37_PLP_Tx1 %>%
+  group_by(ClinVar_CLNSIG) %>%
+  count()
+```
+
+```{r}
+df_clinvar_GRCh37_BLB_Tx1 %>%
+  group_by(ClinVar_CLNSIG) %>%
+  count()
+```
+
+```{r}
+df_clinvar_GRCh38_PLP_Tx1 %>%
+  group_by(ClinVar_CLNSIG) %>%
+  count()
+```
+
+```{r}
+df_clinvar_GRCh38_BLB_Tx1 %>%
+  group_by(ClinVar_CLNSIG) %>%
+  count()
+```
+
+---
+
+```{r}
+df_clinvar_GRCh37_PLP_Tx1 %>%
+  select(chr, start, ref, alt, VariationID, AlleleID) %>%
+  # mutate(key = str_c(VariationID, AlleleID, sep = "|")) %>%
+  rename(`#CHROM` = chr, POS = start, REF = ref, ALT = alt) %>%
+  mutate(ID = ".", QUAL = ".", FILTER = ".") %>%
+  mutate(FORMAT = 'GT:AD:DP') %>%
+  mutate(ClinVarg37 = "1/1:0,100:100") %>%
+  mutate(INFO = str_c("TAG=", key)) %>%
+  select(
+    `#CHROM`,
+    POS,
+    ID,
+    REF,
+    ALT,
+    QUAL,
+    FILTER,
+    INFO,
+    FORMAT,
+    ClinVarg37
+  ) %>%
+  write_tsv(file = "ClinVar_GRCh37_PLP_Tx1_20240107.mvcf")
+
+# 44,351
+```
+
+```{r}
+df_clinvar_GRCh37_BLB_Tx1 %>%
+  select(chr, start, ref, alt, VariationID, AlleleID) %>%
+  # mutate(key = str_c(VariationID, AlleleID, sep = "|")) %>%
+  rename(`#CHROM` = chr, POS = start, REF = ref, ALT = alt) %>%
+  mutate(ID = ".", QUAL = ".", FILTER = ".") %>%
+  mutate(FORMAT = 'GT:AD:DP') %>%
+  mutate(ClinVarg37 = "1/1:0,100:100") %>%
+  mutate(INFO = str_c("TAG=", key)) %>%
+  select(
+    `#CHROM`,
+    POS,
+    ID,
+    REF,
+    ALT,
+    QUAL,
+    FILTER,
+    INFO,
+    FORMAT,
+    ClinVarg37
+  ) %>%
+  write_tsv(file = "ClinVar_GRCh37_BLB_Tx1_20240107.mvcf")
+
+# 120,265
+```
+
+```{r}
+df_clinvar_GRCh38_PLP_Tx1 %>%
+  select(chr, start, ref, alt, VariationID, AlleleID) %>%
+  # mutate(key = str_c(VariationID, AlleleID, sep = "|")) %>%
+  rename(`#CHROM` = chr, POS = start, REF = ref, ALT = alt) %>%
+  mutate(ID = ".", QUAL = ".", FILTER = ".") %>%
+  mutate(FORMAT = 'GT:AD:DP') %>%
+  mutate(ClinVarg37 = "1/1:0,100:100") %>%
+  mutate(INFO = str_c("TAG=", key)) %>%
+  select(
+    `#CHROM`,
+    POS,
+    ID,
+    REF,
+    ALT,
+    QUAL,
+    FILTER,
+    INFO,
+    FORMAT,
+    ClinVarg37
+  ) %>%
+  write_tsv(file = "ClinVar_GRCh38_PLP_Tx1_20240107.mvcf")
+
+# 44,351
+```
+
+```{r}
+df_clinvar_GRCh38_BLB_Tx1 %>%
+  select(chr, start, ref, alt, VariationID, AlleleID) %>%
+  # mutate(key = str_c(VariationID, AlleleID, sep = "|")) %>%
+  rename(`#CHROM` = chr, POS = start, REF = ref, ALT = alt) %>%
+  mutate(ID = ".", QUAL = ".", FILTER = ".") %>%
+  mutate(FORMAT = 'GT:AD:DP') %>%
+  mutate(ClinVarg37 = "1/1:0,100:100") %>%
+  mutate(INFO = str_c("TAG=", key)) %>%
+  select(
+    `#CHROM`,
+    POS,
+    ID,
+    REF,
+    ALT,
+    QUAL,
+    FILTER,
+    INFO,
+    FORMAT,
+    ClinVarg37
+  ) %>%
+  write_tsv(file = "ClinVar_GRCh38_BLB_Tx1_20240107.mvcf")
+
+# 120,198
+```
+
+---
+
+```{bash}
+
+cat vcf_header.txt ClinVar_GRCh37_PLP_Tx1_20240107.mvcf > ClinVar_GRCh37_PLP_Tx1_20240107.vcf
+rm ClinVar_GRCh37_PLP_Tx1_20240107.mvcf
+
+cat vcf_header.txt ClinVar_GRCh37_BLB_Tx1_20240107.mvcf > ClinVar_GRCh37_BLB_Tx1_20240107.vcf
+rm ClinVar_GRCh37_BLB_Tx1_20240107.mvcf
+
+cat vcf_header.txt ClinVar_GRCh38_PLP_Tx1_20240107.mvcf > ClinVar_GRCh38_PLP_Tx1_20240107.vcf
+rm ClinVar_GRCh38_PLP_Tx1_20240107.mvcf
+
+cat vcf_header.txt ClinVar_GRCh38_BLB_Tx1_20240107.mvcf > ClinVar_GRCh38_BLB_Tx1_20240107.vcf
+rm ClinVar_GRCh38_BLB_Tx1_20240107.mvcf
+
+```
+
+---
+
+```{bash}
+# bcftools pod
+
+cd /volume/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF
+
+bgzip -k ClinVar_GRCh37_PLP_Tx1_20240107.vcf
+bgzip -k ClinVar_GRCh37_BLB_Tx1_20240107.vcf
+bgzip -k ClinVar_GRCh38_PLP_Tx1_20240107.vcf
+bgzip -k ClinVar_GRCh38_BLB_Tx1_20240107.vcf
+
+bcftools index ClinVar_GRCh37_PLP_Tx1_20240107.vcf.gz
+bcftools index ClinVar_GRCh37_BLB_Tx1_20240107.vcf.gz
+bcftools index ClinVar_GRCh38_PLP_Tx1_20240107.vcf.gz
+bcftools index ClinVar_GRCh38_BLB_Tx1_20240107.vcf.gz
+
+```
+
+---
+
+```{bash}
+# bcftools pod
+
+bcftools stats ClinVar_GRCh37_PLP_Tx1_20240107.vcf.gz
+
+```
+number of records:      44351
+number of no-ALTs:      0
+number of SNPs:         29391
+number of MNPs:         130
+number of indels:       14830
+number of others:       0
+
+```{bash}
+# bcftools pod
+
+bcftools stats ClinVar_GRCh37_BLB_Tx1_20240107.vcf.gz
+
+```
+number of records:      120265
+number of no-ALTs:      0
+number of SNPs:         115337
+number of MNPs:         140
+number of indels:       4788
+number of others:       0
+
+```{bash}
+# bcftools pod
+
+bcftools stats ClinVar_GRCh38_PLP_Tx1_20240107.vcf.gz
+
+```
+number of records:      44351
+number of no-ALTs:      0
+number of SNPs:         29391
+number of MNPs:         130
+number of indels:       14830
+number of others:       0
+
+```{bash}
+# bcftools pod
+
+bcftools stats ClinVar_GRCh38_BLB_Tx1_20240107.vcf.gz
+
+```
+number of records:      120198
+number of no-ALTs:      0
+number of SNPs:         115269
+number of MNPs:         139
+number of indels:       4790
+number of others:       0
+
+
+
+
+

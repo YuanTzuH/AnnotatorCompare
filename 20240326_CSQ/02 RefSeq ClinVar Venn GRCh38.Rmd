@@ -1,0 +1,192 @@
+```{r}
+library(tidyverse)
+library(ggVennDiagram)
+```
+
+---
+
+要接在`01 RefSeq norm Venn GRCh38.Rmd`之後
+
+```{r}
+rm(
+  CSQ_ClinVar_GRCh38_BLB_annovar_refseq,
+  CSQ_ClinVar_GRCh38_BLB_snpeff_refseq,
+  CSQ_ClinVar_GRCh38_BLB_vep_refseq,
+  CSQ_ClinVar_GRCh38_PLP_annovar_refseq,
+  CSQ_ClinVar_GRCh38_PLP_snpeff_refseq,
+  CSQ_ClinVar_GRCh38_PLP_vep_refseq
+)
+```
+
+```{r}
+rm(
+  ANNOVAR,
+  SnpEff,
+  VEP,
+  All,
+  Venn_TxVariants_Full,
+  data
+)
+```
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ClinVar_VCF/CSQ_concordance/CSQ_ClinVar_GRCh38_Tx1.RData")
+```
+
+```{r}
+ClinVar_NM <- sort(unique(CSQ_ClinVar_GRCh38_Tx1$NM))
+```
+
+```{r}
+ClinVar_NM[which(is.na(ClinVar_NM))]
+```
+
+```{r}
+CSQ_ClinVar_GRCh38_Tx1
+
+# 164,549
+```
+
+---
+
+```{r}
+
+ANNOVAR_clinvar <- ANNOVAR_allDF %>%
+  # 639,245
+  filter(NM %in% ClinVar_NM)
+  # 192,714
+
+SnpEff_clinvar <- SnpEff_allDF %>%
+  # 188,812
+  filter(NM %in% ClinVar_NM)
+  # 172,301
+
+VEP_clinvar <- VEP_allDF %>%
+  # 1,397,641
+  filter(NM %in% ClinVar_NM)
+  # 196,594
+
+```
+
+```{r}
+ANNOVAR <- ANNOVAR_clinvar %>% 
+  mutate(ANNOVAR = str_c(key, ":", NM, ":", Consequence)) %>%
+  select(ANNOVAR) %>% unlist(use.names = F) %>% sort()
+# 192714
+
+SnpEff <- SnpEff_clinvar %>% 
+  mutate(SnpEff = str_c(key, ":", NM, ":", Consequence)) %>%
+  select(SnpEff) %>% unlist(use.names = F) %>% sort()
+# 172301
+
+VEP <- VEP_clinvar %>%
+  mutate(VEP = str_c(key, ":", NM, ":", Consequence)) %>%
+  select(VEP) %>% unlist(use.names = F) %>% sort()
+# 196594
+
+All <- union(union(ANNOVAR, SnpEff), VEP) %>% sort()
+# 198545
+
+```
+
+```{r}
+Venn_TxVariants_ClinVar <- Venn(list(
+  ANNOVAR = ANNOVAR,
+  SnpEff = SnpEff,
+  VEP = VEP
+))
+
+
+data <- process_data(Venn_TxVariants_ClinVar)
+```
+
+```{r fig.width=5, fig.height=5}
+ggplot() +
+  # 1. region count layer
+  geom_polygon(aes(X, Y, fill = id, group = id), 
+          data = venn_regionedge(data),
+          show.legend = FALSE) +
+  # 2. set edge layer
+  geom_path(aes(X, Y, group = id),
+            color="grey",
+            data = venn_setedge(data),
+            linewidth = 1,
+            show.legend = FALSE) +
+  # 3. set label layer
+  geom_text(aes(X, Y, label = name), 
+            fontface = "bold",
+            data = venn_setlabel(data)) +
+  # 4. region label layer
+  geom_label(aes(X, Y, label = count), 
+             data = venn_regionlabel(data),
+             size = 5,
+             alpha = 0.5) +
+  coord_equal() +
+  theme_void()
+```
+
+```{r}
+1464+165+322+21161+169924+1890+3619
+
+1464/198545
+165/198545
+322/198545
+21161/198545
+169924/198545
+1890/198545
+3619/198545
+
+```
+
+1464/198545=0.007373643
+165/198545=0.0008310459
+322/198545=0.001621799
+21161/198545=0.1065804
+169924/198545=0.8558463
+1890/198545=0.009519253
+3619/198545=0.01822761
+
+
+```{r fig.width=5, fig.height=5}
+Venn_TxVariants_ClinVar <- ggplot() +
+  # 1. region count layer
+  geom_polygon(aes(X, Y, fill = id, group = id), 
+          data = venn_regionedge(data),
+          show.legend = FALSE) +
+  # 2. set edge layer
+  geom_path(aes(X, Y, group = id),
+            color="grey",
+            data = venn_setedge(data),
+            linewidth = 1,
+            show.legend = FALSE) +
+  # 3. set label layer
+  geom_text(aes(X, Y, label = name), 
+            fontface = "bold",
+            data = venn_setlabel(data)) +
+  # 4. region label layer
+  geom_label(aes(X, Y, label = count), 
+             data = venn_regionlabel(data),
+             size = 5,
+             alpha = 0.5) +
+  coord_equal() +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
+    panel.grid.major = element_blank() #remove major gridlines
+  ) +
+  theme_void()
+```
+
+```{r}
+ggsave("Venn_CSQ_ClinVarTx.png", Venn_TxVariants_ClinVar, bg='transparent', width = 5, height = 5)
+```
+
+```{r}
+data$regionData %>% 
+  mutate(item = map_chr(item, paste, collapse = ",")) %>%
+  write_tsv(file = "Venn_CSQ_ClinVarTx.tsv")
+```
+
+
+
+

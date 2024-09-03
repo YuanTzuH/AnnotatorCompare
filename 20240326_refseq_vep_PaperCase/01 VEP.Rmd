@@ -1,0 +1,158 @@
+# VEP 111
+
+```{bash}
+# vep pod
+
+screen -U -s /bin/bash
+
+INTPU_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240326_refseq_annovar_PaperCase
+OUTPUD_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240326_refseq_vep_PaperCase
+
+```
+
+```{bash}
+# VEP pod
+
+cd /opt/ensembl-vep
+
+VEP_INPUT_VCF=$INTPU_DIR/hg38_20240326_PaperCase.vcf
+VEP_OUTPUT_VCF=$OUTPUD_DIR/PaperCase_GRCh38_refseq_vep.vcf
+
+ASSEMBLY=GRCh38
+BUFFER_SIZE=500
+CACHE_VERSION=111
+FASTA_VERSION=110
+FORK=1
+
+./vep \
+  --format vcf \
+  -i $VEP_INPUT_VCF \
+  --vcf \
+  -o $VEP_OUTPUT_VCF \
+  --assembly ${ASSEMBLY} \
+  --refseq \
+  --offline \
+  --cache \
+  --cache_version ${CACHE_VERSION} \
+  --dir_cache /volume/vep/cache \
+  --fasta /volume/vep/cache/homo_sapiens_fasta/${FASTA_VERSION}_${ASSEMBLY}/Homo_sapiens.GRCh38.dna.toplevel.fa.gz \
+  --hgvsg \
+  --hgvs \
+  --total_length \
+  --variant_class \
+  --symbol \
+  --protein \
+  --canonical \
+  --mane \
+  --biotype \
+  --no_stats \
+  --no_escape \
+  --buffer_size ${BUFFER_SIZE} \
+  --fork ${FORK}
+
+```
+
+# 這裡bcftools只能用1.18不能用1.19
+```{bash}
+# bcftools pod
+
+cd /volume/rproj/Paper3Annot_2024/ClinVar20240107/20240326_refseq_vep_PaperCase
+
+IN_VCF=PaperCase_GRCh38_refseq_vep.vcf
+OUT_TSV=PaperCase_GRCh38_refseq_vep.query.tsv
+
+bcftools +split-vep -f '%CHROM\t%POS\t%REF\t%ALT\t%TAG\t%CSQ\n' -A tab -d $IN_VCF > $OUT_TSV
+
+```
+
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+tsv_query <- read_tsv(
+  file("PaperCase_GRCh38_refseq_vep.query.tsv"), 
+  col_names = c(
+    "chr",
+    "start",
+    "ref",
+    "alt",
+    "key",
+    "Allele",
+    "Consequence",
+    "IMPACT",
+    "SYMBOL",
+    "Gene",
+    "Feature_type",
+    "Feature",
+    "BIOTYPE",
+    "EXON",
+    "INTRON",
+    "HGVSc",
+    "HGVSp",
+    "cDNA_position",
+    "CDS_position",
+    "Protein_position",
+    "Amino_acids",
+    "Codons",
+    "Existing_variation",
+    "DISTANCE",
+    "STRAND",
+    "FLAGS",
+    "VARIANT_CLASS",
+    "SYMBOL_SOURCE",
+    "HGNC_ID",
+    "CANONICAL",
+    "MANE_SELECT",
+    "MANE_PLUS_CLINICAL",
+    "NP",
+    "REFSEQ_MATCH",
+    "REFSEQ_OFFSET",
+    "GIVEN_REF",
+    "USED_REF",
+    "BAM_EDIT",
+    "HGVS_OFFSET",
+    "HGVSg"
+  ),
+  col_types = cols(start = col_number(), .default = col_character())
+)
+```
+
+```{r}
+df_PaperCase_GRCh38_refseq_vep <- tsv_query %>%
+  select(
+    key, chr, start, ref, alt,
+    VARIANT_CLASS, SYMBOL, Consequence, IMPACT,
+    Gene, Feature, Feature_type, BIOTYPE, STRAND, FLAGS,
+    EXON, INTRON, cDNA_position, CDS_position, DISTANCE,
+    NP, Protein_position, Amino_acids, Codons,
+    HGVSg, HGVSc, HGVSp,
+    CANONICAL, MANE_SELECT, MANE_PLUS_CLINICAL, HGVS_OFFSET
+  ) %>%
+  mutate(NM = str_extract(Feature, '[^\\.]+'))
+```
+
+```{r}
+rm(tsv_query)
+```
+
+---
+
+```{r}
+save(df_PaperCase_GRCh38_refseq_vep, file = "df_PaperCase_GRCh38_refseq_vep.RData")
+```
+
+```{r}
+df_PaperCase_GRCh38_refseq_vep %>%
+  select(-key, -NM) %>%
+  write_tsv("df_PaperCase_GRCh38_refseq_vep.tsv")
+```
+
+
+
+
+
+
+

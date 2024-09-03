@@ -1,0 +1,279 @@
+```{r}
+library(tidyverse)
+```
+
+---
+
+# GRCh37
+```{r}
+load("~/rproj/ACMG/01_raw_DB_prepare/ClinVar_prepare/ClinVar_v20240107/MergeDF/df_clinvar_GRCh37_20240107.RData")
+```
+
+## GRCh37 PLP
+```{r}
+df_clinvar_GRCh37_PLP_sep <- df_clinvar_GRCh37 %>%
+  filter(ClinVar_CLNSIG %in% c("Pathogenic", "Likely_pathogenic")) %>%
+  filter(CLNREVSTAT %in% c("criteria_provided,_multiple_submitters,_no_conflicts", "reviewed_by_expert_panel", "practice_guideline")) %>%
+  # 58,842
+  filter(chr != "MT") %>%
+  # 58,741 (-101)
+  select(chr:ClinVar_CLNSIG, CLNREVSTAT, MC, VariationID, Type, Name, GeneSymbol) %>%
+  filter(!is.na(MC)) %>%
+  # 58,473 (-268)
+  mutate(NM = str_extract(Name, 'N\\w_\\d+')) %>%
+  filter(!is.na(NM)) %>%
+  # 58,472 (-1)
+  filter(!is.na(VariationID)) %>%
+  # 58,472 (-0) %>%
+  filter(!str_detect(MC, ",")) %>%
+  # 44,351 (-14121)
+  mutate(key = str_c(VariationID, "|", AlleleID)) %>%
+  mutate(HGVSc = str_extract(Name, 'c\\.[^\\s\\(]+')) %>%
+  # mutate(Symbol = str_extract(Name, '\\((.*)\\)[^$]', group = 1)) %>%
+  mutate(HGVSp = str_extract(Name, '\\((p\\..*)\\)$', group = 1)) %>%
+  mutate(Consequence = str_extract(MC, '[^\\|]+$')) %>%
+  select(key, chr:ClinVar_CLNSIG, CLNREVSTAT, Consequence, VariationID, Type, Name, NM, GeneSymbol, HGVSc, HGVSp)
+
+```
+
+```{r}
+df_clinvar_GRCh37_PLP_Tx1 <- df_clinvar_GRCh37_PLP_sep %>%
+  mutate(
+    Consequence = case_when(
+      
+      Consequence == "splice_acceptor_variant" ~ "splicing_variant",
+      Consequence == "splice_donor_variant" ~ "splicing_variant",
+      
+      str_detect(Consequence, "inframe_") ~ "inframe_variant",
+      
+      Consequence == "non-coding_transcript_variant" ~ "non_coding_transcript_variant",
+      
+      TRUE ~ Consequence
+      
+    )
+  )
+
+```
+
+```{r}
+rm(df_clinvar_GRCh37_PLP_sep)
+```
+
+```{r}
+save(df_clinvar_GRCh37_PLP_Tx1, file = "df_clinvar_GRCh37_PLP_Tx1.RData")
+```
+
+## GRCh37 BLB
+```{r}
+df_clinvar_GRCh37_BLB_sep <- df_clinvar_GRCh37 %>%
+  filter(ClinVar_CLNSIG %in% c("Benign", "Likely_benign")) %>%
+  filter(CLNREVSTAT %in% c("criteria_provided,_multiple_submitters,_no_conflicts", "reviewed_by_expert_panel", "practice_guideline")) %>%
+  # 147,620
+  filter(chr != "MT") %>%
+  # 147,555 (-65)
+  select(chr:ClinVar_CLNSIG, CLNREVSTAT, MC, VariationID, Type, Name, GeneSymbol) %>%
+  filter(!is.na(MC)) %>%
+  # 146,966 (-589)
+  mutate(NM = str_extract(Name, 'N\\w_\\d+')) %>%
+  filter(!is.na(NM)) %>%
+  # 146,951 (-15)
+  filter(!is.na(VariationID)) %>%
+  # 146,951 (-0) %>%
+  filter(!str_detect(MC, ",")) %>%
+  # 120,265 (-26686)
+  mutate(key = str_c(VariationID, "|", AlleleID)) %>%
+  mutate(HGVSc = str_extract(Name, 'c\\.[^\\s\\(]+')) %>%
+  # mutate(Symbol = str_extract(Name, '\\((.*)\\)[^$]', group = 1)) %>%
+  mutate(HGVSp = str_extract(Name, '\\((p\\..*)\\)$', group = 1)) %>%
+  mutate(Consequence = str_extract(MC, '[^\\|]+$')) %>%
+  select(key, chr:ClinVar_CLNSIG, CLNREVSTAT, Consequence, VariationID, Type, Name, NM, GeneSymbol, HGVSc, HGVSp)
+
+```
+
+```{r}
+df_clinvar_GRCh37_BLB_Tx1 <- df_clinvar_GRCh37_BLB_sep %>%
+  mutate(
+    Consequence = case_when(
+      
+      Consequence == "splice_acceptor_variant" ~ "splicing_variant",
+      Consequence == "splice_donor_variant" ~ "splicing_variant",
+      
+      str_detect(Consequence, "inframe_") ~ "inframe_variant",
+      
+      Consequence == "non-coding_transcript_variant" ~ "non_coding_transcript_variant",
+      
+      TRUE ~ Consequence
+      
+    )
+  )
+```
+
+```{r}
+rm(df_clinvar_GRCh37_BLB_sep)
+```
+
+```{r}
+save(df_clinvar_GRCh37_BLB_Tx1, file = "df_clinvar_GRCh37_BLB_Tx1.RData")
+```
+
+```{r}
+rm(df_clinvar_GRCh37)
+```
+
+
+---
+
+# GRCh38
+```{r}
+load("~/rproj/ACMG/01_raw_DB_prepare/ClinVar_prepare/ClinVar_v20240107/MergeDF/df_clinvar_GRCh38_20240107.RData")
+```
+
+## GRCh38 PLP
+```{r}
+df_clinvar_GRCh38_PLP_sep <- df_clinvar_GRCh38 %>%
+  filter(ClinVar_CLNSIG %in% c("Pathogenic", "Likely_pathogenic")) %>%
+  filter(CLNREVSTAT %in% c("criteria_provided,_multiple_submitters,_no_conflicts", "reviewed_by_expert_panel", "practice_guideline")) %>%
+  # 58,843
+  filter(chr != "MT") %>%
+  # 58,742 (-101)
+  select(chr:ClinVar_CLNSIG, CLNREVSTAT, MC, VariationID, Type, Name, GeneSymbol) %>%
+  filter(!is.na(MC)) %>%
+  # 58,474 (-269)
+  mutate(NM = str_extract(Name, 'N\\w_\\d+')) %>%
+  filter(!is.na(NM)) %>%
+  # 58,473 (-1)
+  filter(!is.na(VariationID)) %>%
+  # 58,473 (-0) %>%
+  filter(!str_detect(MC, ",")) %>%
+  # 44,351 (-14122)
+  mutate(key = str_c(VariationID, "|", AlleleID)) %>%
+  mutate(HGVSc = str_extract(Name, 'c\\.[^\\s\\(]+')) %>%
+  # mutate(Symbol = str_extract(Name, '\\((.*)\\)[^$]', group = 1)) %>%
+  mutate(HGVSp = str_extract(Name, '\\((p\\..*)\\)$', group = 1)) %>%
+  mutate(Consequence = str_extract(MC, '[^\\|]+$')) %>%
+  select(key, chr:ClinVar_CLNSIG, CLNREVSTAT, Consequence, VariationID, Type, Name, NM, GeneSymbol, HGVSc, HGVSp)
+
+```
+
+```{r}
+df_clinvar_GRCh38_PLP_Tx1 <- df_clinvar_GRCh38_PLP_sep %>%
+  mutate(
+    Consequence = case_when(
+      
+      Consequence == "splice_acceptor_variant" ~ "splicing_variant",
+      Consequence == "splice_donor_variant" ~ "splicing_variant",
+      
+      str_detect(Consequence, "inframe_") ~ "inframe_variant",
+      
+      Consequence == "non-coding_transcript_variant" ~ "non_coding_transcript_variant",
+      
+      TRUE ~ Consequence
+      
+    )
+  )
+```
+
+```{r}
+rm(df_clinvar_GRCh38_PLP_sep)
+```
+
+```{r}
+save(df_clinvar_GRCh38_PLP_Tx1, file = "df_clinvar_GRCh38_PLP_Tx1.RData")
+```
+
+## GRCh38 BLB
+```{r}
+df_clinvar_GRCh38_BLB_sep <- df_clinvar_GRCh38 %>%
+  filter(ClinVar_CLNSIG %in% c("Benign", "Likely_benign")) %>%
+  filter(CLNREVSTAT %in% c("criteria_provided,_multiple_submitters,_no_conflicts", "reviewed_by_expert_panel", "practice_guideline")) %>%
+  # 147,544
+  filter(chr != "MT") %>%
+  # 147,479 (-65)
+  select(chr:ClinVar_CLNSIG, CLNREVSTAT, MC, VariationID, Type, Name, GeneSymbol) %>%
+  filter(!is.na(MC)) %>%
+  # 146,891 (-588)
+  mutate(NM = str_extract(Name, 'N\\w_\\d+')) %>%
+  filter(!is.na(NM)) %>%
+  # 146,875 (-16)
+  filter(!is.na(VariationID)) %>%
+  # 146,875 (-0) %>%
+  filter(!str_detect(MC, ",")) %>%
+  # 120,198 (-26677)
+  mutate(key = str_c(VariationID, "|", AlleleID)) %>%
+  mutate(HGVSc = str_extract(Name, 'c\\.[^\\s\\(]+')) %>%
+  # mutate(Symbol = str_extract(Name, '\\((.*)\\)[^$]', group = 1)) %>%
+  mutate(HGVSp = str_extract(Name, '\\((p\\..*)\\)$', group = 1)) %>%
+  mutate(Consequence = str_extract(MC, '[^\\|]+$')) %>%
+  select(key, chr:ClinVar_CLNSIG, CLNREVSTAT, Consequence, VariationID, Type, Name, NM, GeneSymbol, HGVSc, HGVSp)
+
+```
+
+```{r}
+df_clinvar_GRCh38_BLB_Tx1 <- df_clinvar_GRCh38_BLB_sep %>%
+  mutate(
+    Consequence = case_when(
+      
+      Consequence == "splice_acceptor_variant" ~ "splicing_variant",
+      Consequence == "splice_donor_variant" ~ "splicing_variant",
+      
+      str_detect(Consequence, "inframe_") ~ "inframe_variant",
+      
+      Consequence == "non-coding_transcript_variant" ~ "non_coding_transcript_variant",
+      
+      TRUE ~ Consequence
+      
+    )
+  )
+```
+
+```{r}
+rm(df_clinvar_GRCh38_BLB_sep)
+```
+
+```{r}
+save(df_clinvar_GRCh38_BLB_Tx1, file = "df_clinvar_GRCh38_BLB_Tx1.RData")
+```
+
+```{r}
+rm(df_clinvar_GRCh38)
+```
+
+
+---
+
+
+```{r}
+unique(df_clinvar_GRCh37_PLP_Tx1$Consequence) %>% sort()
+```
+
+```{r}
+unique(df_clinvar_GRCh37_BLB_Tx1$Consequence) %>% sort()
+```
+
+```{r}
+unique(df_clinvar_GRCh38_PLP_Tx1$Consequence) %>% sort()
+```
+
+```{r}
+unique(df_clinvar_GRCh38_BLB_Tx1$Consequence) %>% sort()
+```
+
+---
+
+
+```{r}
+df_clinvar_GRCh38_PLP_Tx1 %>%
+  filter(HGVSc != df_clinvar_GRCh38_PLP_Tx1$HGVSc)
+```
+
+```{r}
+df_clinvar_GRCh38_PLP_Tx1 %>%
+  filter(VariationID %in% c(95245, 2368, 1478658, 964958, 1065743, 865981))
+```
+
+
+
+
+
+
+

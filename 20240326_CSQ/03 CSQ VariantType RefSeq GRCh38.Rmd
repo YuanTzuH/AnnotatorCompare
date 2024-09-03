@@ -1,0 +1,418 @@
+```{r}
+library(tidyverse)
+```
+
+---
+輸出給瑜安2
+with ACMG
+
+```{r}
+Vtable_BLB <- read_tsv("vtable/ClinVar_BLB_Tx1_20240107.vtable.tsv") %>%
+  select(ClinVar_VariationID, ClinVar_AlleleID, ClinVar_CLNSIG, ClinVar_CLNREVSTAT, ACMG_Classes, ACMG_Rules, CADD_RawScore, CADD_PHRED, DANN_DannScore, DANN_DannRankscore, SpliceAI_SYMBOL:SpliceAI_DPDL)
+
+Vtable_PLP <- read_tsv("vtable/ClinVar_PLP_Tx1_20240107.vtable.tsv") %>%
+  select(ClinVar_VariationID, ClinVar_AlleleID, ClinVar_CLNSIG, ClinVar_CLNREVSTAT, ACMG_Classes, ACMG_Rules, CADD_RawScore, CADD_PHRED, DANN_DannScore, DANN_DannRankscore, SpliceAI_SYMBOL:SpliceAI_DPDL)
+```
+
+```{r}
+Vtable_BLB <- Vtable_BLB %>%
+  mutate(key = str_c(ClinVar_VariationID, "|", ClinVar_AlleleID)) %>%
+  select(key, ClinVar_CLNSIG:SpliceAI_DPDL)
+
+Vtable_PLP <- Vtable_PLP %>%
+  mutate(key = str_c(ClinVar_VariationID, "|", ClinVar_AlleleID)) %>%
+  select(key, ClinVar_CLNSIG:SpliceAI_DPDL)
+```
+
+```{r}
+Vtable_ACMG <- bind_rows(
+  Vtable_BLB,
+  Vtable_PLP
+) %>%
+  arrange(key)
+```
+
+```{r}
+rm(Vtable_BLB, Vtable_PLP)
+```
+
+---
+
+要接在`02 RefSeq ClinVar Venn GRCh38.Rmd`之後
+
+```{r}
+rm(
+  ANNOVAR,
+  SnpEff,
+  VEP,
+  All,
+  Venn_TxVariants_ClinVar,
+  data
+)
+```
+
+```{r}
+rm(
+  ANNOVAR_allDF,
+  SnpEff_allDF,
+  VEP_allDF
+)
+```
+
+---
+
+```{r}
+CSQ_ClinVar_GRCh38_Tx1 %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(Consequence)
+```
+
+
+# LOF Type
+
+```{r}
+CSQ_ClinVar_GRCh38_Tx1 <- CSQ_ClinVar_GRCh38_Tx1 %>%
+  mutate(
+    Class = case_when(
+      Consequence %in% c("nonsense", "splicing_variant", "frameshift_variant") ~ "LOF",
+      Consequence == "missense_variant" ~ "Missense",
+      Consequence %in% c("inframe_variant", "stop_lost") ~ "Length_Change",
+      Consequence == "synonymous_variant" ~ "Synonymous",
+      TRUE ~ "Others"
+    )
+  )
+```
+
+---
+
+```{r}
+ClinVar_CSQ_annovar <- CSQ_ClinVar_GRCh38_Tx1 %>%
+  left_join(
+    ANNOVAR_clinvar %>%
+      rename(ANNOVAR = Consequence),
+    by = c("key", "NM")
+  ) 
+
+# 164549
+```
+
+```{r}
+ClinVar_CSQ_annovar %>%
+  filter(is.na(ANNOVAR) | (Consequence != ANNOVAR))
+
+# 1666
+```
+
+輸出給瑜安
+```{r}
+ClinVar_CSQ_annovar %>%
+  filter(is.na(ANNOVAR) | (Consequence != ANNOVAR)) %>%
+  separate(key, into = c("VariationID", "AlleleID"), sep = "\\|", remove = T) %>%
+  write_tsv("CSQ_ClinVar_VS_ANNOVAR.tsv", na = "-NA-")
+```
+
+輸出給瑜安2
+```{r}
+ClinVar_CSQ_annovar %>%
+  left_join(Vtable_ACMG, by = "key") %>%
+  filter(is.na(ANNOVAR) | (Consequence != ANNOVAR)) %>%
+  separate(key, into = c("VariationID", "AlleleID"), sep = "\\|", remove = T) %>%
+  write_tsv("CSQ_ClinVar_VS_ANNOVAR_withACMG.tsv", na = "-NA-")
+
+```
+
+---
+
+```{r}
+ClinVar_CSQ_snpeff <- CSQ_ClinVar_GRCh38_Tx1 %>%
+  left_join(
+    SnpEff_clinvar %>%
+      rename(SnpEff = Consequence),
+    by = c("key", "NM")
+  )
+
+# 164549
+```
+
+```{r}
+ClinVar_CSQ_snpeff %>%
+  filter(is.na(SnpEff) | (Consequence != SnpEff))
+
+# 1363
+```
+
+輸出給瑜安
+```{r}
+ClinVar_CSQ_snpeff %>%
+  filter(is.na(SnpEff) | (Consequence != SnpEff)) %>%
+  separate(key, into = c("VariationID", "AlleleID"), sep = "\\|", remove = T) %>%
+  write_tsv("CSQ_ClinVar_VS_SnpEff.tsv", na = "-NA-")
+
+```
+
+輸出給瑜安2
+```{r}
+ClinVar_CSQ_snpeff %>%
+  left_join(Vtable_ACMG, by = "key") %>%
+  filter(is.na(SnpEff) | (Consequence != SnpEff)) %>%
+  separate(key, into = c("VariationID", "AlleleID"), sep = "\\|", remove = T) %>%
+  write_tsv("CSQ_ClinVar_VS_SnpEff_withACMG.tsv", na = "-NA-")
+
+```
+
+---
+
+```{r}
+ClinVar_CSQ_vep <- CSQ_ClinVar_GRCh38_Tx1 %>%
+  left_join(
+    VEP_clinvar %>%
+      rename(VEP = Consequence),
+    by = c("key", "NM")
+  )
+
+# 164549
+```
+
+```{r}
+ClinVar_CSQ_vep %>%
+  filter(is.na(VEP) | (Consequence != VEP))
+
+# 1066
+```
+
+輸出給瑜安
+```{r}
+ClinVar_CSQ_vep %>%
+  filter(is.na(VEP) | (Consequence != VEP)) %>%
+  separate(key, into = c("VariationID", "AlleleID"), sep = "\\|", remove = T) %>%
+  write_tsv("CSQ_ClinVar_VS_VEP.tsv", na = "-NA-")
+
+
+```
+
+輸出給瑜安2
+```{r}
+ClinVar_CSQ_vep %>%
+  left_join(Vtable_ACMG, by = "key") %>%
+  filter(is.na(VEP) | (Consequence != VEP)) %>%
+  separate(key, into = c("VariationID", "AlleleID"), sep = "\\|", remove = T) %>%
+  write_tsv("CSQ_ClinVar_VS_VEP_withACMG.tsv", na = "-NA-")
+
+```
+
+---
+
+```{r}
+(164549-1666)/164549
+(164549-1363)/164549
+(164549-1066)/164549
+```
+
+```{r fig.width=3, fig.height=3}
+barplot_ClinVar_CSQ <- tibble(
+  Annotator = c("ANNOVAR", "SnpEff", "VEP"),
+  Fraction = c(0.9898754, 0.9917168, 0.9935217)
+) %>%
+  mutate(Annotator = factor(Annotator, levels = c("ANNOVAR", "SnpEff", "VEP"))) %>%
+  ggplot(aes(x = Annotator, y = Fraction)) +
+  geom_bar(stat="identity", fill = "#619CFF") +
+  geom_text(aes(label = c("0.990", "0.992", "0.994")), vjust=1.6, color="white", position = position_dodge(0.9), size = 5) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    panel.grid.major = element_blank(), #remove major gridlines
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+    legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) +
+  xlab("") +
+  ylim(0, 1) +
+  ylab("Fraction of Match ClinVar")
+```
+縮放
+```{r fig.width=3, fig.height=3}
+barplot_ClinVar_CSQ <- tibble(
+  Annotator = c("ANNOVAR", "SnpEff", "VEP"),
+  Fraction = c(0.9898754, 0.9917168, 0.9935217)
+) %>%
+  mutate(
+    ScaledFraction = (Fraction - 0.95) * 20,  # 縮放數據
+    Annotator = factor(Annotator, levels = c("ANNOVAR", "SnpEff", "VEP"))
+  ) %>%
+  ggplot(aes(x = Annotator, y = ScaledFraction)) +
+  geom_bar(stat="identity", fill = "#619CFF") +
+  geom_text(aes(label = c("0.990", "0.992", "0.994")), vjust=1.6, color="white", position = position_dodge(0.9), size = 5) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    panel.grid.major = element_blank(), #remove major gridlines
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+    legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) +
+  xlab("") +
+  scale_y_continuous(limits = c(0, 1), breaks = seq(0, 1, by = 0.2), labels = c("0.95", "0.96", "0.97", "0.98", "0.99", "1.00")) +
+  ylab("Fraction of Match ClinVar")
+```
+0.797508	
+0.834336	
+0.870434
+```{r}
+ggsave("barplot_CSQ_ClinVar.png", barplot_ClinVar_CSQ, bg='transparent', width = unit(3, "cm"), height = unit(3, "cm"))
+```
+
+---
+
+# Class
+
+```{r}
+CSQ_ClinVar_GRCh38_Tx1 %>%
+  group_by(Class) %>%
+  count()
+```
+
+## ANNOVAR
+
+```{r}
+ClinVar_CSQ_annovar %>%
+  filter(is.na(ANNOVAR) | (Consequence != ANNOVAR)) %>%
+  group_by(Class) %>%
+  count()
+```
+
+```{r}
+(31640-532)/31640
+(1036-9)/1036
+(29978-362)/29978
+(35023-268)/35023
+(66872-495)/66872
+```
+
+```{r fig.width=5.5, fig.height=4}
+barplot_ClinVar_HGVSc <- tibble(
+  Type = c("LOF", "Length_Change", "Missense", "Others", "Synonymous"),
+  Fraction = c(0.9831858, 0.9913127, 0.9879245, 0.9923479, 0.9925978)
+) %>%
+  mutate(Type = factor(Type, levels = c("LOF", "Missense", "Length_Change", "Synonymous", "Others"))) %>%
+  ggplot(aes(x = Type, y = Fraction)) +
+  geom_bar(stat="identity", fill = "#DB72FB") +
+  # geom_text(aes(label = round(Fraction, digits = 3)), vjust=1.6, color="white", position = position_dodge(0.9), size = 5) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    panel.grid.major = element_blank(), #remove major gridlines
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+    legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) +
+  xlab("") +
+  coord_cartesian(ylim=c(0.95,1)) +
+  ylab("Fraction of Match ClinVar")
+```
+
+```{r}
+ggsave("barplot_CSQclass_annovar.png", barplot_ClinVar_HGVSc, bg='transparent', width = unit(5.5, "cm"), height = unit(4, "cm"))
+```
+
+## SnpEff
+
+```{r}
+ClinVar_CSQ_snpeff %>%
+  filter(is.na(SnpEff) | (Consequence != SnpEff)) %>%
+  group_by(Class) %>%
+  count()
+```
+
+```{r}
+(31640-782)/31640
+(1036-3)/1036
+(29978-102)/29978
+(35023-317)/35023
+(66872-159)/66872
+```
+
+```{r fig.width=5.5, fig.height=4}
+barplot_ClinVar_HGVSc <- tibble(
+  Type = c("LOF", "Length_Change", "Missense", "Others", "Synonymous"),
+  Fraction = c(0.9752845, 0.9971042, 0.9965975, 0.9909488, 0.9976223)
+) %>%
+  mutate(Type = factor(Type, levels = c("LOF", "Missense", "Length_Change", "Synonymous", "Others"))) %>%
+  ggplot(aes(x = Type, y = Fraction)) +
+  geom_bar(stat="identity", fill = "#DB72FB") +
+  # geom_text(aes(label = round(Fraction, digits = 3)), vjust=1.6, color="white", position = position_dodge(0.9), size = 5) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    panel.grid.major = element_blank(), #remove major gridlines
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+    legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) +
+  xlab("") +
+  coord_cartesian(ylim=c(0.95,1)) +
+  ylab("Fraction of Match ClinVar")
+```
+
+```{r}
+ggsave("barplot_CSQclass_smpeff.png", barplot_ClinVar_HGVSc, bg='transparent', width = unit(5.5, "cm"), height = unit(4, "cm"))
+```
+
+
+## VEP
+
+```{r}
+ClinVar_CSQ_vep %>%
+  filter(is.na(VEP) | (Consequence != VEP)) %>%
+  group_by(Class) %>%
+  count()
+```
+
+```{r}
+(31640-882)/31640
+(1036-1)/1036
+(29978-11)/29978
+(35023-101)/35023
+(66872-71)/66872
+```
+
+```{r fig.width=5.5, fig.height=4}
+barplot_ClinVar_HGVSc <- tibble(
+  Type = c("LOF", "Length_Change", "Missense", "Others", "Synonymous"),
+  Fraction = c(0.9721239, 0.9990347, 0.9996331, 0.9971162, 0.9989383)
+) %>%
+  mutate(Type = factor(Type, levels = c("LOF", "Missense", "Length_Change", "Synonymous", "Others"))) %>%
+  ggplot(aes(x = Type, y = Fraction)) +
+  geom_bar(stat="identity", fill = "#DB72FB") +
+  # geom_text(aes(label = round(Fraction, digits = 3)), vjust=1.6, color="white", position = position_dodge(0.9), size = 5) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    panel.grid.major = element_blank(), #remove major gridlines
+    legend.background = element_rect(fill='transparent'), #transparent legend bg
+    legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) +
+  xlab("") +
+  coord_cartesian(ylim=c(0.95,1)) +
+  ylab("Fraction of Match ClinVar")
+```
+
+```{r}
+ggsave("barplot_CSQclass_vep.png", barplot_ClinVar_HGVSc, bg='transparent', width = unit(5.5, "cm"), height = unit(4, "cm"))
+```

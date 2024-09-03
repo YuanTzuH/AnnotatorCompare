@@ -1,0 +1,192 @@
+```{r}
+library(tidyverse)
+library(ggVennDiagram)
+```
+
+---
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ensembl_annovar/CSQ_concordance/CSQ_ClinVar_GRCh38_BLB_annovar_ensembl.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ensembl_annovar/CSQ_concordance/CSQ_ClinVar_GRCh38_PLP_annovar_ensembl.RData")
+
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240227_ensembl_snpeff/CSQ_concordance/CSQ_ClinVar_GRCh38_BLB_snpeff_ensembl.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240227_ensembl_snpeff/CSQ_concordance/CSQ_ClinVar_GRCh38_PLP_snpeff_ensembl.RData")
+
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240226_ensembl_vep/CSQ_concordance/CSQ_ClinVar_GRCh38_BLB_vep_ensembl.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240226_ensembl_vep/CSQ_concordance/CSQ_ClinVar_GRCh38_PLP_vep_ensembl.RData")
+
+```
+
+---
+
+# All Transcript
+
+```{r}
+
+ANNOVAR_allDF <- bind_rows(
+  CSQ_ClinVar_GRCh38_BLB_annovar_ensembl %>% select(key, ENST, Consequence),
+  CSQ_ClinVar_GRCh38_PLP_annovar_ensembl %>% select(key, ENST, Consequence)
+) %>%
+  # 902,441
+  distinct()
+  # 902,441
+
+SnpEff_allDF <- bind_rows(
+  CSQ_ClinVar_GRCh38_BLB_snpeff_ensembl %>% select(key, ENST, Consequence),
+  CSQ_ClinVar_GRCh38_PLP_snpeff_ensembl %>% select(key, ENST, Consequence)
+) %>%
+  # 189,836
+  distinct()
+  # 189,836
+
+VEP_allDF <- bind_rows(
+  CSQ_ClinVar_GRCh38_BLB_vep_ensembl %>% select(key, Feature, Consequence),
+  CSQ_ClinVar_GRCh38_PLP_vep_ensembl %>% select(key, Feature, Consequence)
+) %>%
+  # 2,150,654
+  distinct() %>%
+  rename(ENST = Feature) %>%
+  select(key, ENST, Consequence)
+  # 2,150,654
+
+```
+
+---
+
+```{r}
+ANNOVAR <- ANNOVAR_allDF %>% 
+  mutate(ANNOVAR = str_c(key, ":", ENST, ":", Consequence)) %>%
+  select(ANNOVAR) %>% unlist(use.names = F) %>% sort()
+# 902441
+
+SnpEff <- SnpEff_allDF %>% 
+  mutate(SnpEff = str_c(key, ":", ENST, ":", Consequence)) %>%
+  select(SnpEff) %>% unlist(use.names = F) %>% sort()
+# 189836
+
+VEP <- VEP_allDF %>%
+  mutate(VEP = str_c(key, ":", ENST, ":", Consequence)) %>%
+  select(VEP) %>% unlist(use.names = F) %>% sort()
+# 2150654
+
+All <- union(union(ANNOVAR, SnpEff), VEP) %>% sort()
+# 2173993
+
+```
+
+---
+
+```{r}
+Venn_AllTx <- Venn(list(
+  ANNOVAR = ANNOVAR,
+  SnpEff = SnpEff,
+  VEP = VEP
+))
+
+
+data <- process_data(Venn_AllTx)
+```
+
+```{r fig.width=5, fig.height=5}
+ggplot() +
+  # 1. region count layer
+  geom_polygon(aes(X, Y, fill = id, group = id), 
+          data = venn_regionedge(data),
+          show.legend = FALSE) +
+  # 2. set edge layer
+  geom_path(aes(X, Y, group = id),
+            color="grey",
+            data = venn_setedge(data),
+            linewidth = 1,
+            show.legend = FALSE) +
+  # 3. set label layer
+  geom_text(aes(X, Y, label = name), 
+            fontface = "bold",
+            data = venn_setlabel(data)) +
+  # 4. region label layer
+  geom_label(aes(X, Y, label = count), 
+             data = venn_regionlabel(data),
+             size = 5,
+             alpha = 0.5) +
+  coord_equal() +
+  theme_void()
+```
+
+```{r}
+21822+164+1353+693203+187252+1067+1269132
+
+21822/2173993
+164/2173993
+1353/2173993
+693203/2173993
+187252/2173993
+1067/2173993
+1269132/2173993
+
+```
+
+21822/2173993=0.01003775
+164/2173993=7.543723e-05
+1353/2173993=0.0006223571
+693203/2173993=0.3188617
+187252/2173993=0.08613275
+1067/2173993=0.0004908019
+1269132/2173993=0.5837792
+
+```{r fig.width=5, fig.height=5}
+ggVenn_AllTx <- ggplot() +
+  # 1. region count layer
+  geom_polygon(aes(X, Y, fill = id, group = id), 
+          data = venn_regionedge(data),
+          show.legend = FALSE) +
+  # 2. set edge layer
+  geom_path(aes(X, Y, group = id),
+            color="grey",
+            data = venn_setedge(data),
+            linewidth = 1,
+            show.legend = FALSE) +
+  # 3. set label layer
+  geom_text(aes(X, Y, label = name), 
+            fontface = "bold",
+            data = venn_setlabel(data)) +
+  # 4. region label layer
+  geom_label(aes(X, Y, label = count), 
+             data = venn_regionlabel(data),
+             size = 5,
+             alpha = 0.5) +
+  coord_equal() +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
+    panel.grid.major = element_blank() #remove major gridlines
+  ) +
+  theme_void()
+```
+
+```{r}
+ggsave("Venn_CSQ_allTx_ensembl.png", ggVenn_AllTx, bg='transparent', width = 5, height = 5)
+```
+
+```{r}
+data$regionData %>% 
+  mutate(item = map_chr(item, paste, collapse = ",")) %>%
+  write_tsv(file = "Venn_CSQ_allTx_ensembl.png.tsv")
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

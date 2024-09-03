@@ -1,0 +1,198 @@
+```{r}
+library(tidyverse)
+```
+
+---
+
+# 找出非正常NM, NG, NR, NC
+```{r}
+df_clinvar_GRCh37 %>%
+  filter(ClinVar_CLNSIG %in% c("Benign", "Likely_benign", "Pathogenic", "Likely_pathogenic")) %>%
+  filter(CLNREVSTAT %in% c("criteria_provided,_multiple_submitters,_no_conflicts", "reviewed_by_expert_panel", "practice_guideline")) %>%
+  filter(chr != "MT") %>%
+  filter(!is.na(MC)) %>%
+  filter(!str_detect(Name, '^N') | is.na(Name)) %>%
+  select(VariationID, AlleleID, Name)
+```
+
+```{r}
+df_clinvar_GRCh38 %>%
+  filter(ClinVar_CLNSIG %in% c("Benign", "Likely_benign", "Pathogenic", "Likely_pathogenic")) %>%
+  filter(CLNREVSTAT %in% c("criteria_provided,_multiple_submitters,_no_conflicts", "reviewed_by_expert_panel", "practice_guideline")) %>%
+  filter(chr != "MT") %>%
+  filter(!is.na(MC)) %>%
+  filter(!str_detect(Name, '^N') | is.na(Name)) %>%
+  select(VariationID, AlleleID, Name)
+```
+
+---
+
+# MC重複的數量
+```{r}
+df_clinvar_GRCh37 %>%
+  filter(ClinVar_CLNSIG %in% c("Pathogenic", "Likely_pathogenic")) %>%
+  filter(CLNREVSTAT %in% c("criteria_provided,_multiple_submitters,_no_conflicts", "reviewed_by_expert_panel", "practice_guideline")) %>%
+  filter(chr != "MT") %>%
+  filter(!is.na(MC)) %>%
+  mutate(NM = str_extract(Name, 'N\\w_\\d+')) %>%
+  filter(!is.na(NM)) %>%
+  filter(!is.na(VariationID)) %>%
+  filter(str_detect(MC, ",")) %>%
+  # 40,807
+  separate_rows(MC, sep = ",") %>%
+  mutate(Consequence = str_extract(MC, '[^\\|]+$')) %>%
+  select(VariationID, AlleleID, Consequence) %>%
+  arrange(VariationID, AlleleID, Consequence) %>%
+  group_by(VariationID, AlleleID) %>%
+  summarise(across(Consequence, ~ paste(.x, collapse = ", ")), .groups = "drop") %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(-n) %>%
+  write_tsv("MultiMC/GRCh37_PLP.tsv")
+
+```
+
+```{r}
+df_clinvar_GRCh37 %>%
+  filter(ClinVar_CLNSIG %in% c("Benign", "Likely_benign")) %>%
+  filter(CLNREVSTAT %in% c("criteria_provided,_multiple_submitters,_no_conflicts", "reviewed_by_expert_panel", "practice_guideline")) %>%
+  filter(chr != "MT") %>%
+  filter(!is.na(MC)) %>%
+  mutate(NM = str_extract(Name, 'N\\w_\\d+')) %>%
+  filter(!is.na(NM)) %>%
+  filter(!is.na(VariationID)) %>%
+  filter(str_detect(MC, ",")) %>%
+  # 26,686 
+  separate_rows(MC, sep = ",") %>%
+  mutate(Consequence = str_extract(MC, '[^\\|]+$')) %>%
+  select(VariationID, AlleleID, Consequence) %>%
+  arrange(VariationID, AlleleID, Consequence) %>%
+  group_by(VariationID, AlleleID) %>%
+  summarise(across(Consequence, ~ paste(.x, collapse = ", ")), .groups = "drop") %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(-n) %>%
+  write_tsv("MultiMC/GRCh37_BLB.tsv")
+```
+
+---
+
+```{r}
+df_clinvar_GRCh38 %>%
+  filter(ClinVar_CLNSIG %in% c("Pathogenic", "Likely_pathogenic")) %>%
+  filter(CLNREVSTAT %in% c("criteria_provided,_multiple_submitters,_no_conflicts", "reviewed_by_expert_panel", "practice_guideline")) %>%
+  filter(chr != "MT") %>%
+  filter(!is.na(MC)) %>%
+  mutate(NM = str_extract(Name, 'N\\w_\\d+')) %>%
+  filter(!is.na(NM)) %>%
+  filter(!is.na(VariationID)) %>%
+  filter(str_detect(MC, ",")) %>%
+  # 14,122
+  separate_rows(MC, sep = ",") %>%
+  mutate(Consequence = str_extract(MC, '[^\\|]+$')) %>%
+  select(VariationID, AlleleID, Consequence) %>%
+  arrange(VariationID, AlleleID, Consequence) %>%
+  group_by(VariationID, AlleleID) %>%
+  summarise(across(Consequence, ~ paste(.x, collapse = ", ")), .groups = "drop") %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(-n) %>%
+  write_tsv("MultiMC/GRCh38_PLP.tsv")
+  
+```
+
+
+```{r}
+df_clinvar_GRCh38 %>%
+  filter(ClinVar_CLNSIG %in% c("Benign", "Likely_benign")) %>%
+  filter(CLNREVSTAT %in% c("criteria_provided,_multiple_submitters,_no_conflicts", "reviewed_by_expert_panel", "practice_guideline")) %>%
+  filter(chr != "MT") %>%
+  filter(!is.na(MC)) %>%
+  mutate(NM = str_extract(Name, 'N\\w_\\d+')) %>%
+  filter(!is.na(NM)) %>%
+  filter(!is.na(VariationID)) %>%
+  filter(str_detect(MC, ",")) %>%
+  # 26,677
+  separate_rows(MC, sep = ",") %>%
+  mutate(Consequence = str_extract(MC, '[^\\|]+$')) %>%
+  select(VariationID, AlleleID, Consequence) %>%
+  arrange(VariationID, AlleleID, Consequence) %>%
+  group_by(VariationID, AlleleID) %>%
+  summarise(across(Consequence, ~ paste(.x, collapse = ", ")), .groups = "drop") %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(-n) %>%
+  write_tsv("MultiMC/GRCh38_BLB.tsv")
+```
+
+---
+
+# 看一下NM比例
+```{r}
+df_clinvar_GRCh37_PLP_sep %>%
+  mutate(NM = str_extract(Name, 'N\\w')) %>%
+  group_by(NM) %>%
+  count()
+```
+
+```{r}
+df_clinvar_GRCh37_BLB_sep %>%
+  mutate(NM = str_extract(Name, 'N\\w')) %>%
+  group_by(NM) %>%
+  count()
+```
+
+```{r}
+df_clinvar_GRCh38_PLP_sep %>%
+  mutate(NM = str_extract(Name, 'N\\w')) %>%
+  group_by(NM) %>%
+  count()
+```
+
+```{r}
+df_clinvar_GRCh38_BLB_sep %>%
+  mutate(NM = str_extract(Name, 'N\\w')) %>%
+  group_by(NM) %>%
+  count()
+```
+
+---
+
+# 看一下CSQ比例
+```{r}
+df_clinvar_GRCh37_PLP_sep %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(-n) %>%
+  write_tsv("MultiMC/GRCh37_PLP_CSQcount.tsv")
+```
+
+```{r}
+df_clinvar_GRCh37_BLB_sep %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(-n) %>%
+  write_tsv("MultiMC/GRCh37_BLB_CSQcount.tsv")
+```
+
+```{r}
+df_clinvar_GRCh38_PLP_sep %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(-n) %>%
+  write_tsv("MultiMC/GRCh38_PLP_CSQcount.tsv")
+```
+
+```{r}
+df_clinvar_GRCh38_BLB_sep %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(-n) %>%
+  write_tsv("MultiMC/GRCh38_BLB_CSQcount.tsv")
+```
+
+---
+
+
+
+

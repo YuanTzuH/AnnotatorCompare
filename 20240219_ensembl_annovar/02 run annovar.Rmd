@@ -1,0 +1,74 @@
+```{r}
+library(tidyverse)
+```
+
+# Annovar refGene
+
+## GRCh37 PLP
+```{bash}
+# annovar pod
+
+IN_avinput=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh37_PLP/ClinVar_GRCh37_PLP.avinput
+OUT_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ensembl_annovar/GRCh37_PLP
+
+perl /volume/wgsa/annovar/table_annovar.pl $IN_avinput \
+/volume/wgsa/annovar/humandb/ --buildver hg19 --protocol ensGene --operation g -polish \
+-out $OUT_DIR/ClinVar_GRCh37_PLP \
+--thread 2 \
+--argument '--neargene 5000 --hgvs --transcript_function --separate' \
+--dot2underline --nastring .
+
+```
+
+## GRCh37 BLB
+```{bash}
+# annovar pod
+
+IN_avinput=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh37_BLB/ClinVar_GRCh37_BLB.avinput
+OUT_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ensembl_annovar/GRCh37_BLB
+
+perl /volume/wgsa/annovar/table_annovar.pl $IN_avinput \
+/volume/wgsa/annovar/humandb/ --buildver hg19 --protocol ensGene --operation g -polish \
+-out $OUT_DIR/ClinVar_GRCh37_BLB \
+--thread 2 \
+--argument '--neargene 5000 --hgvs --transcript_function --separate' \
+--dot2underline --nastring .
+
+```
+
+## GRCh38 PLP
+```{bash}
+# annovar pod
+
+IN_avinput=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh38_PLP/ClinVar_GRCh38_PLP.avinput
+OUT_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ensembl_annovar/GRCh38_PLP
+
+perl /volume/wgsa/annovar/table_annovar.pl $IN_avinput \
+/volume/wgsa/annovar/humandb/ --buildver hg38 --protocol ensGene --operation g -polish \
+-out $OUT_DIR/ClinVar_GRCh38_PLP \
+--thread 2 \
+--argument '--neargene 5000 --hgvs --transcript_function --separate' \
+--dot2underline --nastring .
+
+```
+
+## GRCh38 BLB
+```{bash}
+# annovar pod
+
+IN_avinput=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh38_BLB/ClinVar_GRCh38_BLB.avinput
+OUT_DIR=/volume/rproj/Paper3Annot_2024/ClinVar20240107/20240219_ensembl_annovar/GRCh38_BLB
+
+perl /volume/wgsa/annovar/table_annovar.pl $IN_avinput \
+/volume/wgsa/annovar/humandb/ --buildver hg38 --protocol ensGene --operation g -polish \
+-out $OUT_DIR/ClinVar_GRCh38_BLB \
+--thread 2 \
+--argument '--neargene 5000 --hgvs --transcript_function --separate' \
+--dot2underline --nastring .
+
+```
+
+
+
+
+

@@ -1,0 +1,283 @@
+```{r}
+library(tidyverse)
+```
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh38_BLB/df_ClinVar_GRCh38_BLB_annovar_refseq.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh38_PLP/df_ClinVar_GRCh38_PLP_annovar_refseq.RData")
+```
+
+---
+
+```{r}
+bind_rows(
+  df_ClinVar_GRCh38_BLB_annovar_refseq %>%
+    select(Consequence),
+  df_ClinVar_GRCh38_PLP_annovar_refseq %>%
+    select(Consequence),
+) %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(-n)
+
+```
+
+```{r}
+bind_rows(
+  df_ClinVar_GRCh38_BLB_annovar_refseq %>%
+    select(key, NM, Consequence),
+  df_ClinVar_GRCh38_PLP_annovar_refseq %>%
+    select(key, NM, Consequence),
+) %>%
+  group_by(key, NM) %>%
+  arrange(Consequence, .by_group = T) %>%
+  summarise(across(Consequence, ~ paste(.x, collapse = ",")), .groups = "drop") %>%
+  group_by(Consequence) %>%
+  count() %>%
+  arrange(-n)
+```
+
+```{r}
+test <- df_ClinVar_GRCh38_BLB_annovar_refseq %>%
+  mutate(
+    Concordance = case_when(
+      Consequence == "splicing" ~ "splicing_variant",
+      
+      Consequence == "stopgain" ~ "nonsense",
+      
+      Consequence == "frameshift deletion" ~ "frameshift_variant",
+      Consequence == "frameshift insertion" ~ "frameshift_variant",
+      # Consequence == "frameshift substitution" ~ "frameshift_variant",
+      
+      Consequence == "stoploss" ~ "stop_lost",
+      Consequence == "startloss" ~ "initiatior_codon_variant",
+      
+      Consequence == "nonframeshift deletion" ~ "inframe_variant",
+      Consequence == "nonframeshift insertion" ~ "inframe_variant",
+      
+      Consequence == "nonsynonymous SNV" ~ "missense_variant",
+      Consequence == "nonframeshift substitution" ~ "missense_variant",
+      
+      Consequence == "synonymous SNV" ~ "synonymous_variant",
+      
+      Consequence == "UTR5" ~ "5_prime_UTR_variant",
+      Consequence == "UTR3" ~ "3_prime_UTR_variant",
+      
+      Consequence == "ncRNA_exonic" ~ "non_coding_transcript_variant",
+      Consequence == "ncRNA_intronic" ~ "non_coding_transcript_variant",
+      Consequence == "ncRNA_splicing" ~ "non_coding_transcript_variant",
+      
+      Consequence == "intronic" ~ "intron_variant",
+      
+      Consequence == "upstream" ~ "genic_upstream_transcript_variant",
+      Consequence == "downstream" ~ "genic_downstream_transcript_variant",
+      
+      # Consequence == "intergenic" ~ "intergenic_variant",
+      TRUE ~ Consequence
+    )
+  ) %>%
+  select(key, NM, Consequence, Concordance)
+```
+
+```{r}
+test %>%
+  group_by(key, NM, Concordance) %>%
+  filter(n() > 1)
+```
+
+```{r}
+df_ClinVar_GRCh38_BLB_annovar_refseq %>%
+  filter(key %in% c("167569|178004", "2049534|2107421", "773598|704570"))
+```
+
+
+
+
+
+---
+
+# Concordance 
+
+```{r}
+df_ClinVar_GRCh38_BLB_annovar_refseq_CSQ <- df_ClinVar_GRCh38_BLB_annovar_refseq %>%
+  mutate(
+    Consequence = case_when(
+      Consequence == "splicing" ~ "splicing_variant",
+      
+      Consequence == "stopgain" ~ "nonsense",
+      
+      Consequence == "frameshift deletion" ~ "frameshift_variant",
+      Consequence == "frameshift insertion" ~ "frameshift_variant",
+      # Consequence == "frameshift substitution" ~ "frameshift_variant",
+      
+      Consequence == "stoploss" ~ "stop_lost",
+      Consequence == "startloss" ~ "initiatior_codon_variant",
+      
+      Consequence == "nonframeshift deletion" ~ "inframe_variant",
+      Consequence == "nonframeshift insertion" ~ "inframe_variant",
+      
+      Consequence == "nonsynonymous SNV" ~ "missense_variant",
+      Consequence == "nonframeshift substitution" ~ "missense_variant",
+      
+      Consequence == "synonymous SNV" ~ "synonymous_variant",
+      
+      Consequence == "UTR5" ~ "5_prime_UTR_variant",
+      Consequence == "UTR3" ~ "3_prime_UTR_variant",
+      
+      Consequence == "ncRNA_exonic" ~ "non_coding_transcript_variant",
+      Consequence == "ncRNA_intronic" ~ "non_coding_transcript_variant",
+      Consequence == "ncRNA_splicing" ~ "non_coding_transcript_variant",
+      
+      Consequence == "intronic" ~ "intron_variant",
+      
+      Consequence == "upstream" ~ "genic_upstream_transcript_variant",
+      Consequence == "downstream" ~ "genic_downstream_transcript_variant",
+      
+      # Consequence == "intergenic" ~ "intergenic_variant",
+      TRUE ~ Consequence
+    )
+  ) %>%
+  select(key, NM, Consequence) %>%
+  mutate(key = str_remove(key, "TAG="))
+```
+
+```{r}
+df_ClinVar_GRCh38_PLP_annovar_refseq_CSQ <- df_ClinVar_GRCh38_PLP_annovar_refseq %>%
+  mutate(
+    Consequence = case_when(
+      Consequence == "splicing" ~ "splicing_variant",
+      
+      Consequence == "stopgain" ~ "nonsense",
+      
+      Consequence == "frameshift deletion" ~ "frameshift_variant",
+      Consequence == "frameshift insertion" ~ "frameshift_variant",
+      # Consequence == "frameshift substitution" ~ "frameshift_variant",
+      
+      Consequence == "stoploss" ~ "stop_lost",
+      Consequence == "startloss" ~ "initiatior_codon_variant",
+      
+      Consequence == "nonframeshift deletion" ~ "inframe_variant",
+      Consequence == "nonframeshift insertion" ~ "inframe_variant",
+      
+      Consequence == "nonsynonymous SNV" ~ "missense_variant",
+      Consequence == "nonframeshift substitution" ~ "missense_variant",
+      
+      Consequence == "synonymous SNV" ~ "synonymous_variant",
+      
+      Consequence == "UTR5" ~ "5_prime_UTR_variant",
+      Consequence == "UTR3" ~ "3_prime_UTR_variant",
+      
+      Consequence == "ncRNA_exonic" ~ "non_coding_transcript_variant",
+      Consequence == "ncRNA_intronic" ~ "non_coding_transcript_variant",
+      Consequence == "ncRNA_splicing" ~ "non_coding_transcript_variant",
+      
+      Consequence == "intronic" ~ "intron_variant",
+      
+      Consequence == "upstream" ~ "genic_upstream_transcript_variant",
+      Consequence == "downstream" ~ "genic_downstream_transcript_variant",
+      
+      # Consequence == "intergenic" ~ "intergenic_variant",
+      TRUE ~ Consequence
+    )
+  ) %>%
+  select(key, NM, Consequence) %>%
+  mutate(key = str_remove(key, "TAG="))
+```
+
+---
+
+```{r}
+df_ClinVar_GRCh38_BLB_annovar_refseq_CSQ_n1 <- df_ClinVar_GRCh38_BLB_annovar_refseq_CSQ %>%
+  # 466,474
+  distinct() %>%
+  # 466,471
+  group_by(key, NM) %>%
+  filter(n() == 1) %>%
+  ungroup()
+# 465,623
+
+df_ClinVar_GRCh38_BLB_annovar_refseq_CSQ_n2 <- df_ClinVar_GRCh38_BLB_annovar_refseq_CSQ %>%
+  # 466,474
+  distinct() %>%
+  # 466,471
+  group_by(key, NM) %>%
+  filter(n() > 1) %>%
+  # 848
+  filter(Consequence == "splicing_variant") %>%
+  ungroup()
+# 424
+
+CSQ_ClinVar_GRCh38_BLB_annovar_refseq <- bind_rows(
+  df_ClinVar_GRCh38_BLB_annovar_refseq_CSQ_n1,
+  df_ClinVar_GRCh38_BLB_annovar_refseq_CSQ_n2
+) %>%
+  arrange(key, NM)
+# 466,047
+
+```
+
+```{r}
+rm(df_ClinVar_GRCh38_BLB_annovar_refseq_CSQ, df_ClinVar_GRCh38_BLB_annovar_refseq_CSQ_n1, df_ClinVar_GRCh38_BLB_annovar_refseq_CSQ_n2)
+```
+
+
+```{r}
+df_ClinVar_GRCh38_PLP_annovar_refseq_CSQ_n1 <- df_ClinVar_GRCh38_PLP_annovar_refseq_CSQ %>%
+  # 197,952
+  distinct() %>%
+  # 197,917
+  group_by(key, NM) %>%
+  filter(n() == 1) %>%
+  ungroup()
+# 148,403
+
+df_ClinVar_GRCh38_PLP_annovar_refseq_CSQ_n2 <- df_ClinVar_GRCh38_PLP_annovar_refseq_CSQ %>%
+  # 197,952
+  distinct() %>%
+  # 197,917
+  group_by(key, NM) %>%
+  filter(n() > 1) %>%
+  # 49,514
+  filter(Consequence == "splicing_variant") %>%
+  ungroup()
+# 24,757
+
+CSQ_ClinVar_GRCh38_PLP_annovar_refseq <- bind_rows(
+  df_ClinVar_GRCh38_PLP_annovar_refseq_CSQ_n1,
+  df_ClinVar_GRCh38_PLP_annovar_refseq_CSQ_n2
+) %>%
+  arrange(key, NM)
+# 173,160
+
+```
+
+```{r}
+rm(df_ClinVar_GRCh38_PLP_annovar_refseq_CSQ, df_ClinVar_GRCh38_PLP_annovar_refseq_CSQ_n1, df_ClinVar_GRCh38_PLP_annovar_refseq_CSQ_n2)
+```
+
+```{r}
+save(CSQ_ClinVar_GRCh38_BLB_annovar_refseq, file = "CSQ_concordance/CSQ_ClinVar_GRCh38_BLB_annovar_refseq.RData")
+save(CSQ_ClinVar_GRCh38_PLP_annovar_refseq, file = "CSQ_concordance/CSQ_ClinVar_GRCh38_PLP_annovar_refseq.RData")
+```
+
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

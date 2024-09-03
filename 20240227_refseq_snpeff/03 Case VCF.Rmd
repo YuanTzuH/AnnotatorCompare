@@ -1,0 +1,57 @@
+```{r}
+library(tidyverse)
+```
+
+---
+
+# Chr8-60801516-C-CT (B)
+
+```{r}
+df_ClinVar_GRCh38_BLB_snpeff_refseq %>%
+  filter(key == "166861|177589")
+
+# NM_017780.4
+```
+
+# Chr11-2588702-G-GT (B)
+
+```{r}
+df_ClinVar_GRCh38_BLB_snpeff_refseq %>%
+  filter(key == "923645|915754")
+
+# NM_000218.3
+```
+
+# Chr11-2588702-GT-GG (B)
+
+```{r}
+df_ClinVar_GRCh38_BLB_snpeff_refseq %>%
+  filter(key == "593467|584531")
+
+# NM_000218.3
+```
+
+# Chr13-32316490-A-AT (P)
+
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_refseq %>%
+  filter(key == "51509|66177")
+
+# NM_000059.4
+```
+
+# Chr13-32316490-AT-A (P)
+
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_refseq %>%
+  filter(key == "51508|66176")
+
+# NM_000059.4
+```
+
+
+
+
+
+
+

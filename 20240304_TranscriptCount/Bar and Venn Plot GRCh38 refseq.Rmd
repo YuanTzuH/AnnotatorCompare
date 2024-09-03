@@ -1,0 +1,257 @@
+```{r}
+library(tidyverse)
+library(ggVennDiagram)
+```
+
+---
+
+```{r}
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh38_PLP/df_ClinVar_GRCh38_PLP_annovar_refseq.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240219_refseq_annovar/GRCh38_BLB/df_ClinVar_GRCh38_BLB_annovar_refseq.RData")
+
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240227_refseq_snpeff/GRCh38_PLP/df_ClinVar_GRCh38_PLP_snpeff_refseq.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240227_refseq_snpeff/GRCh38_BLB/df_ClinVar_GRCh38_BLB_snpeff_refseq.RData")
+
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240226_refseq_vep/GRCh38_PLP/df_ClinVar_GRCh38_PLP_vep_refseq.RData")
+load("~/rproj/Paper3Annot_2024/ClinVar20240107/20240226_refseq_vep/GRCh38_BLB/df_ClinVar_GRCh38_BLB_vep_refseq.RData")
+
+```
+
+---
+
+# Transcript Count
+
+```{r}
+df_ClinVar_GRCh38_PLP_annovar_refseq %>%
+  select(NM) %>%
+  distinct() %>%
+  nrow()
+
+df_ClinVar_GRCh38_BLB_annovar_refseq %>%
+  select(NM) %>%
+  distinct() %>%
+  nrow()
+```
+
+```{r}
+df_ClinVar_GRCh38_PLP_snpeff_refseq %>%
+  select(NM) %>%
+  distinct() %>%
+  nrow()
+
+df_ClinVar_GRCh38_BLB_snpeff_refseq %>%
+  select(NM) %>%
+  distinct() %>%
+  nrow()
+```
+
+```{r}
+df_ClinVar_GRCh38_PLP_vep_refseq %>%
+  select(NM) %>%
+  distinct() %>%
+  nrow()
+
+df_ClinVar_GRCh38_BLB_vep_refseq %>%
+  select(NM) %>%
+  distinct() %>%
+  nrow()
+```
+
+```{r}
+
+ANNOVAR <- union(
+  df_ClinVar_GRCh38_PLP_annovar_refseq$NM,
+  df_ClinVar_GRCh38_BLB_annovar_refseq$NM
+)
+
+SnpEff <- union(
+  df_ClinVar_GRCh38_PLP_snpeff_refseq$NM,
+  df_ClinVar_GRCh38_BLB_snpeff_refseq$NM
+)
+
+VEP <- union(
+  df_ClinVar_GRCh38_PLP_vep_refseq$NM,
+  df_ClinVar_GRCh38_BLB_vep_refseq$NM
+)
+
+All <- union(union(ANNOVAR, SnpEff), VEP) %>% sort()
+
+```
+
+---
+
+```{r}
+length(ANNOVAR)/length(All)
+length(SnpEff)/length(All)
+length(VEP)/length(All)
+```
+
+```{r fig.width=3, fig.height=3}
+barplot_TXcount_refseq <- tibble(
+  Annotator = c("ANNOVAR", "SnpEff", "VEP"),
+  Fraction = c(length(ANNOVAR)/length(All), length(SnpEff)/length(All), length(VEP)/length(All)),
+  Count = c(length(ANNOVAR), length(SnpEff), length(VEP))
+) %>%
+  mutate(Annotator = factor(Annotator, levels = c("ANNOVAR", "SnpEff", "VEP"))) %>%
+  ggplot(aes(x = Annotator, y = Fraction)) +
+  geom_bar(stat="identity", fill = "#619CFF") +
+  geom_text(aes(label = Count), vjust=1.6, color="white", position = position_dodge(0.9), size = 5) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    axis.text.x = element_text(size = 10, face = "bold"),
+    panel.grid.minor = element_blank() #remove minor gridlines
+    # legend.background = element_rect(fill='transparent'), #transparent legend bg
+    # legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) +
+  xlab("") +
+  # ylim(0.1, 0.9) +
+  ylab("Fraction of total transcript")
+```
+
+```{r}
+ggsave("barplot_TXcount_refseq.png", barplot_TXcount_refseq, bg='transparent', width = unit(3, "cm"), height = unit(3, "cm"))
+```
+
+沒數字版本
+```{r fig.width=3, fig.height=3}
+barplot_TXcount_refseq <- tibble(
+  Annotator = c("ANNOVAR", "SnpEff", "VEP"),
+  Fraction = c(length(ANNOVAR)/length(All), length(SnpEff)/length(All), length(VEP)/length(All)),
+  Count = c(length(ANNOVAR), length(SnpEff), length(VEP))
+) %>%
+  mutate(Annotator = factor(Annotator, levels = c("ANNOVAR", "SnpEff", "VEP"))) %>%
+  ggplot(aes(x = Annotator, y = Fraction)) +
+  geom_bar(stat="identity", fill = "#619CFF") +
+  # geom_text(aes(label = Count), vjust=1.6, color="white", position = position_dodge(0.9), size = 5) +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color = NA), #transparent plot bg
+    axis.ticks.y = element_line(linewidth = 1, color="black") , 
+    axis.ticks.length.y = unit(0.5, "cm"),
+    axis.line.y = element_line(linewidth = 1, colour = "black"),
+    axis.text.y = element_text(size = 10, face = "bold"),
+    axis.text.x = element_text(size = 10, face = "bold"),
+    panel.grid.minor = element_blank() #remove minor gridlines
+    # legend.background = element_rect(fill='transparent'), #transparent legend bg
+    # legend.box.background = element_rect(fill='transparent') #transparent legend panel
+  ) +
+  xlab("") +
+  # ylim(0.1, 0.9) +
+  ylab("Fraction of total transcript")
+```
+
+```{r}
+ggsave("barplot_TXcount_refseq_noNum.png", barplot_TXcount_refseq, bg='transparent', width = unit(3, "cm"), height = unit(3, "cm"))
+```
+
+---
+
+```{r}
+Venn_TxVariants_Full <- Venn(list(
+  ANNOVAR = ANNOVAR,
+  SnpEff = SnpEff,
+  VEP = VEP
+))
+
+
+data <- process_data(Venn_TxVariants_Full)
+```
+
+```{r fig.width=5, fig.height=5}
+ggplot() +
+  # 1. region count layer
+  geom_polygon(aes(X, Y, fill = id, group = id), 
+          data = venn_regionedge(data),
+          show.legend = FALSE) +
+  # 2. set edge layer
+  geom_path(aes(X, Y, group = id),
+            color="grey",
+            data = venn_setedge(data),
+            linewidth = 1,
+            show.legend = FALSE) +
+  # 3. set label layer
+  geom_text(aes(X, Y, label = name), 
+            fontface = "bold",
+            data = venn_setlabel(data)) +
+  # 4. region label layer
+  geom_label(aes(X, Y, label = count), 
+             data = venn_regionlabel(data),
+             size = 5,
+             alpha = 0.5) +
+  coord_equal() +
+  theme_void()
+```
+
+
+```{r}
+88+0+0+14421+5776+72+5112
+
+88/25469
+0/25469
+0/25469
+14421/25469
+5776/25469
+72/25469
+5112/25469
+
+```
+
+88/25469=0.003455181
+0/25469=0
+0/25469=0
+14421/25469=0.5662178
+5776/25469=0.2267855
+72/25469=0.002826966
+5112/25469=0.2007146
+
+
+```{r fig.width=5, fig.height=5}
+ggVenn_AllTx <- ggplot() +
+  # 1. region count layer
+  geom_polygon(aes(X, Y, fill = id, group = id), 
+          data = venn_regionedge(data),
+          show.legend = FALSE) +
+  # 2. set edge layer
+  geom_path(aes(X, Y, group = id),
+            color="grey",
+            data = venn_setedge(data),
+            linewidth = 1,
+            show.legend = FALSE) +
+  # 3. set label layer
+  geom_text(aes(X, Y, label = name), 
+            fontface = "bold",
+            data = venn_setlabel(data)) +
+  # 4. region label layer
+  geom_label(aes(X, Y, label = count), 
+             data = venn_regionlabel(data),
+             size = 5,
+             alpha = 0.5) +
+  coord_equal() +
+  theme(
+    panel.background = element_rect(fill='transparent'), #transparent panel bg
+    plot.background = element_rect(fill='transparent', color=NA), #transparent plot bg
+    panel.grid.major = element_blank() #remove major gridlines
+  ) +
+  theme_void()
+```
+
+```{r}
+ggsave("Venn_TxVariants_RefSeq.png", ggVenn_AllTx, bg='transparent', width = 5, height = 5)
+```
+
+```{r}
+data$regionData %>% 
+  mutate(item = map_chr(item, paste, collapse = ",")) %>%
+  write_tsv(file = "Venn_TxVariants_RefSeq.tsv")
+```
+
+
+
+
+
+
